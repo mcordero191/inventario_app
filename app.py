@@ -18,7 +18,7 @@ ws = wb.active
 if "Link" in df.columns:
     col_idx = list(df.columns).index("Link") + 1  # posición 1-based
     links = []
-    for row in ws.iter_rows(min_row=3, min_col=col_idx, max_col=col_idx):
+    for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
         cell = row[0]
         if cell.hyperlink:
             links.append(cell.hyperlink.target)
