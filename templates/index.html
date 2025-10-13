@@ -10,8 +10,8 @@
   input { padding: 8px; width: 280px; }
   button { padding: 8px 12px; background: #007BFF; color: white; border: none; cursor: pointer; }
   button:hover { background: #0056b3; }
-  table { border-collapse: collapse; margin-top: 20px; width: 60%; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  table { border-collapse: collapse; margin-top: 20px; width: 70%; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
   th { background-color: #f2f2f2; }
 </style>
 </head>
@@ -29,7 +29,9 @@
       <h3>Resultado:</h3>
       <table>
         {% for key, value in result.items() %}
-          <tr><th>{{ key }}</th><td>{{ value }}</td></tr>
+          {% if key != 'Link' %}
+            <tr><th>{{ key }}</th><td>{{ value|safe }}</td></tr>
+          {% endif %}
         {% endfor %}
       </table>
     {% endif %}
