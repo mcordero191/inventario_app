@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Markup
 import pandas as pd
+import os
 
 app = Flask(__name__)
 
-# Carga del archivo Excel (solo primera hoja)
-df = pd.read_excel("INVENTARIO.xlsx", sheet_name=0)
+# === CARGA DEL EXCEL ===
+# Asume que la cabecera está en la segunda fila (índice 1)
+df = pd.read_excel("INVENTARIO.xlsx", header=1, sheet_name=0)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -14,7 +16,20 @@ def index():
         # Buscar en la segunda columna (índice 1)
         row = df[df.iloc[:, 1].astype(str).str.strip() == codigo]
         if not row.empty:
-            result = row.to_dict(orient="records")[0]
+            record = row.to_dict(orient="records")[0]
+            
+            # Si existe la columna "Link", incrustar su contenido
+            if "Link" in record and pd.notna(record["Link"]):
+                link = str(record["Link"]).strip()
+                embed = ""
+                if link.endswith(".pdf"):
+                    embed = f'<embed src="{link}" type="application/pdf" width="100%" height="600px">'
+                elif link.endswith((".png", ".jpg", ".jpeg")):
+                    embed = f'<img src="{link}" alt="Imagen relacionada" style="max-width:100%;">'
+                else:
+                    embed = f'<iframe src="{link}" width="100%" height="600px"></iframe>'
+                record["Documento"] = Markup(embed)
+            result = record
         else:
             result = "No se encontró el código."
     return render_template("index.html", result=result)
