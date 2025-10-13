@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, Markup
+from flask import Flask, render_template, request
+from markupsafe import Markup
 import pandas as pd
 import os
 
