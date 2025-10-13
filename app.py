@@ -6,16 +6,16 @@ import os
 app = Flask(__name__)
 
 # === CARGA DEL EXCEL ===
-# Asume que la cabecera está en la segunda fila (índice 1)
-df = pd.read_excel("INVENTARIO.xlsx", header=1, sheet_name=0)
+# Asume que la cabecera está en la tercera fila (índice 2)
+df = pd.read_excel("INVENTARIO.xlsx", header=2, sheet_name=0)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     result = None
     if request.method == "POST":
         codigo = request.form["codigo"].strip()
-        # Buscar en la tercera columna (índice 2)
-        row = df[df.iloc[:, 2].astype(str).str.strip() == codigo]
+        # Buscar en la segunda columna (índice 2)
+        row = df[df.iloc[:, 1].astype(str).str.strip() == codigo]
         if not row.empty:
             record = row.to_dict(orient="records")[0]
             
