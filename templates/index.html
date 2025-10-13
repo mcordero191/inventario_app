@@ -2,39 +2,105 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Consulta de Inventario</title>
+<title>Inventario PUCP</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 40px; }
-  h2 { color: #333; }
-  form { margin-bottom: 20px; }
-  input { padding: 8px; width: 280px; }
-  button { padding: 8px 12px; background: #007BFF; color: white; border: none; cursor: pointer; }
-  button:hover { background: #0056b3; }
-  table { border-collapse: collapse; margin-top: 20px; width: 70%; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
-  th { background-color: #f2f2f2; }
+  body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: #F2F2F2; color: #333; }
+  header { background-color: #002C77; padding: 20px; display: flex; align-items: center; color: white; }
+  header img { height: 50px; margin-right: 20px; }
+  h1 { font-size: 1.8em; margin: 0; }
+  main { padding: 40px; }
+  form { margin-bottom: 20px; position: relative; width: 320px; }
+  input { padding: 8px; width: 300px; border: 1px solid #ccc; border-radius: 4px; }
+  button { padding: 8px 14px; background: #0072CE; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  button:hover { background: #005BB5; }
+  table { border-collapse: collapse; margin-top: 20px; width: 80%; background: white; border-radius: 6px; overflow: hidden; }
+  th, td { border: 1px solid #ccc; padding: 10px; text-align: left; vertical-align: top; }
+  th { background-color: #E9ECF5; width: 25%; }
+  .doc-section { margin-top: 40px; }
+  ul.suggestions {
+    list-style: none;
+    position: absolute;
+    top: 35px;
+    width: 300px;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    padding-left: 0;
+    margin: 0;
+    z-index: 100;
+  }
+  ul.suggestions li {
+    padding: 8px;
+    cursor: pointer;
+  }
+  ul.suggestions li:hover {
+    background: #E9ECF5;
+  }
 </style>
 </head>
 <body>
-  <h2>Consulta de Inventario</h2>
-  <form method="POST">
-      <input type="text" name="codigo" placeholder="Ingrese el código (e.g. A-01-3ALMINS000037)" required>
-      <button type="submit">Buscar</button>
-  </form>
+  <header>
+    <img src="https://red.pucp.edu.pe/riel/files/2019/07/LOGO-DE-PUCP.jpg" alt="PUCP">
+    <h1>Consulta de Inventario PUCP</h1>
+  </header>
 
-  {% if result %}
-    {% if result is string %}
-      <p><strong>{{ result }}</strong></p>
-    {% else %}
-      <h3>Resultado:</h3>
-      <table>
-        {% for key, value in result.items() %}
-          {% if key != 'Link' %}
-            <tr><th>{{ key }}</th><td>{{ value|safe }}</td></tr>
-          {% endif %}
-        {% endfor %}
-      </table>
+  <main>
+    <form method="POST" autocomplete="off">
+        <input type="text" id="codigo" name="codigo" placeholder="Ingrese el código (e.g. A-01-3ALMINS000037)" required>
+        <button type="submit">Buscar</button>
+        <ul id="suggestions" class="suggestions" style="display:none;"></ul>
+    </form>
+
+    {% if result %}
+      {% if result is string %}
+        <p><strong>{{ result }}</strong></p>
+      {% else %}
+        <table>
+          {% for key, value in result.items() %}
+            {% if key not in ['Link', 'Documento'] %}
+              <tr><th>{{ key }}</th><td>{{ value|safe }}</td></tr>
+            {% endif %}
+          {% endfor %}
+        </table>
+
+        {% if result.Documento %}
+          <div class="doc-section">
+            <h3>Documento incrustado:</h3>
+            {{ result.Documento|safe }}
+          </div>
+        {% endif %}
+      {% endif %}
     {% endif %}
-  {% endif %}
+  </main>
+
+  <script>
+    const input = document.getElementById('codigo');
+    const suggestions = document.getElementById('suggestions');
+
+    input.addEventListener('input', async () => {
+      const query = input.value.trim();
+      if (query.length < 2) { suggestions.style.display = 'none'; return; }
+      const response = await fetch(`/autocomplete?q=${query}`);
+      const data = await response.json();
+      if (data.length === 0) { suggestions.style.display = 'none'; return; }
+
+      suggestions.innerHTML = data.map(code => `<li>${code}</li>`).join('');
+      suggestions.style.display = 'block';
+    });
+
+    suggestions.addEventListener('click', e => {
+      if (e.target.tagName === 'LI') {
+        input.value = e.target.textContent;
+        suggestions.style.display = 'none';
+        input.form.submit();
+      }
+    });
+
+    document.addEventListener('click', e => {
+      if (!input.contains(e.target)) suggestions.style.display = 'none';
+    });
+  </script>
 </body>
 </html>
