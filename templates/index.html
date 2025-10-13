@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Consulta de Inventario</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; }
+  h2 { color: #333; }
+  form { margin-bottom: 20px; }
+  input { padding: 8px; width: 280px; }
+  button { padding: 8px 12px; background: #007BFF; color: white; border: none; cursor: pointer; }
+  button:hover { background: #0056b3; }
+  table { border-collapse: collapse; margin-top: 20px; width: 60%; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  th { background-color: #f2f2f2; }
+</style>
+</head>
+<body>
+  <h2>Consulta de Inventario</h2>
+  <form method="POST">
+      <input type="text" name="codigo" placeholder="Ingrese el código (e.g. A-01-3ALMINS000037)" required>
+      <button type="submit">Buscar</button>
+  </form>
+
+  {% if result %}
+    {% if result is string %}
+      <p><strong>{{ result }}</strong></p>
+    {% else %}
+      <h3>Resultado:</h3>
+      <table>
+        {% for key, value in result.items() %}
+          <tr><th>{{ key }}</th><td>{{ value }}</td></tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+  {% endif %}
+</body>
+</html>
