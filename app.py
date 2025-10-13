@@ -14,8 +14,8 @@ def index():
     result = None
     if request.method == "POST":
         codigo = request.form["codigo"].strip()
-        # Buscar en la segunda columna (índice 1)
-        row = df[df.iloc[:, 1].astype(str).str.strip() == codigo]
+        # Buscar en la tercera columna (índice 2)
+        row = df[df.iloc[:, 2].astype(str).str.strip() == codigo]
         if not row.empty:
             record = row.to_dict(orient="records")[0]
             
