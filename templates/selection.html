@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Seleccionar código</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #F9FAFB; color: #333; margin: 0; padding: 40px; }
+  h2 { color: #002C77; }
+  a { text-decoration: none; color: #0072CE; }
+  a:hover { text-decoration: underline; }
+  .error-box {
+    background: #FFE5E5;
+    color: #B00020;
+    padding: 15px;
+    border-radius: 6px;
+    width: fit-content;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  }
+  ul { list-style: none; padding-left: 0; }
+  li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+  {% if mensaje %}
+    <div class="error-box">
+      <strong>{{ mensaje }}</strong>
+    </div>
+  {% else %}
+    <h2>Coincidencias para "{{ desc }}"</h2>
+    <ul>
+      {% for c in codigos %}
+        <li><a href="/{{ c }}">{{ c }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</body>
+</html>
