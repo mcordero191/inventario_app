@@ -60,7 +60,10 @@
         <table>
           {% for key, value in result.items() %}
             {% if key not in ['Link', 'Documento'] %}
-              <tr><th>{{ key.upper() }}</th><td>{{ value|safe }}</td></tr>
+              <tr><th>
+                <th>{{ key.upper() }}</th>
+                <td>{{ value if value not in [None, 'nan', 'NaN'] else '-' | safe }}</td>
+              </tr>
             {% endif %}
           {% endfor %}
         </table>
