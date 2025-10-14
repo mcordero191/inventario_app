@@ -8,11 +8,9 @@ app = Flask(__name__)
 # === CARGA DEL EXCEL ===
 df = pd.read_excel("INVENTARIO.xlsx", header=2, sheet_name=0)
 
-# Leer hipervínculos con openpyxl
+# Leer hipervínculos reales de la columna "Link"
 wb = openpyxl.load_workbook("INVENTARIO.xlsx", data_only=True)
 ws = wb.active
-
-# Extraer hipervínculos reales
 if "Link" in df.columns:
     col_idx = list(df.columns).index("Link") + 1
     links = []
@@ -56,6 +54,7 @@ def buscar_codigo_por_descripcion(desc):
 
 
 def resumen_general():
+    """Resumen de conteo de elementos."""
     total = len(df)
     sin_codigo = df[df.iloc[:, 1].isna()].shape[0]
     con_codigo = total - sin_codigo
@@ -63,17 +62,23 @@ def resumen_general():
     return dict(total=total, sin_codigo=sin_codigo, con_codigo=con_codigo, con_codigo_link=con_codigo_link)
 
 
-# === RUTAS ===
+# === RUTAS PRINCIPALES ===
 @app.route("/", methods=["GET"])
 @app.route("/<codigo>", methods=["GET"])
 def index(codigo=None):
+    """Vista principal: búsqueda por código."""
     result = None
     stats = resumen_general()
     codigos = sorted(df.iloc[:, 1].dropna().astype(str).unique())
-    descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())  # columna 4
+    descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())
 
     if codigo:
-        result = buscar_codigo(codigo) or "No se encontró el código."
+        result = buscar_codigo(codigo)
+        if not result:
+            result = {
+                "no_agregado": True,
+                "mensaje": f"El código «{codigo}» no ha sido registrado o agregado al inventario."
+            }
 
     return render_template("index.html", result=result, stats=stats,
                            codigos=codigos, descripciones=descripciones)
@@ -81,24 +86,40 @@ def index(codigo=None):
 
 @app.route("/buscar", methods=["GET"])
 def buscar():
-    """Procesa la búsqueda por descripción y redirige al código."""
+    """Procesa la búsqueda por descripción y redirige o muestra resultados múltiples."""
     desc = request.args.get("desc", "").strip()
     if not desc:
         return redirect(url_for("index"))
 
     codigos = buscar_codigo_por_descripcion(desc)
 
-    # 🧩 Si no hay ningún código asociado a la descripción
+    # Caso: sin ningún código asociado
     if len(codigos) == 0:
-        mensaje = f"La descripción «{desc}» no tiene un código registrado en el inventario."
+        mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
         return render_template("seleccion.html", mensaje=mensaje)
 
-    # ✅ Si hay solo un código → redirigir directamente a su ficha
+    # Caso: un solo código → redirigir directamente
     elif len(codigos) == 1:
-        return redirect(f"/{codigos[0]}")
+        codigo = codigos[0].strip()
+        if codigo == "" or codigo.lower() in ["nan", "none"]:
+            mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
+            return render_template("seleccion.html", mensaje=mensaje)
+        else:
+            return redirect(f"/{codigo}")
 
-    # 🧭 Si hay varios códigos → mostrar lista de opciones
+    # Caso: múltiples coincidencias → mostrar tabla de código + descripción
     else:
-        return render_template("seleccion.html", desc=desc, codigos=codigos)
+        codigos_validos = [c for c in codigos if str(c).strip() not in ["", "nan", "none"]]
+        if not codigos_validos:
+            mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
+            return render_template("seleccion.html", mensaje=mensaje)
+
+        coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos_validos)][[df.columns[1], df.columns[3]]]
+        items = coincidencias.to_dict(orient="records")
+
+        return render_template("seleccion.html", desc=desc, items=items,
+                               col_codigo=df.columns[1], col_desc=df.columns[3])
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
