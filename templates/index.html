@@ -93,7 +93,7 @@
     suggestions.addEventListener('click', e => {
       if (e.target.tagName === 'LI') {
         input.value = e.target.textContent;
-        suggestions.style.display = '-';
+        suggestions.style.display = 'none';
         input.form.submit();
       }
     });
