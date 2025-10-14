@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 from markupsafe import Markup
 import pandas as pd
 import openpyxl
@@ -21,6 +21,7 @@ if "Link" in df.columns:
         links.append(cell.hyperlink.target if cell.hyperlink else None)
     df["Link"] = links[:len(df)]
 
+# === FUNCIONES ===
 def preparar_registro(record):
     """Agrega documento incrustado y enlace si existe."""
     if "Link" in record and pd.notna(record["Link"]):
@@ -36,23 +37,32 @@ def preparar_registro(record):
             record["Documento"] = Markup(f'<iframe src="{link}" width="100%" height="600px"></iframe>')
     return record
 
+
 def buscar_codigo(codigo):
+    """Busca por código (columna 2)."""
     row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
     if not row.empty:
         return preparar_registro(row.to_dict(orient="records")[0])
     return None
 
+
 def buscar_descripcion(desc):
-    matches = df[df.apply(lambda x: any(desc.lower() in str(v).lower() for v in x.values), axis=1)]
+    """Busca por descripción (columna 4)."""
+    desc = desc.lower().strip()
+    matches = df[df.iloc[:, 3].astype(str).str.lower().str.contains(desc)]
     return [preparar_registro(r) for r in matches.to_dict(orient="records")]
 
+
 def resumen_general():
+    """Cuenta los elementos con/sin código y con link."""
     total = len(df)
     sin_codigo = df[df.iloc[:, 1].isna()].shape[0]
     con_codigo = total - sin_codigo
     con_codigo_link = df[(~df.iloc[:, 1].isna()) & (df["Link"].notna())].shape[0]
     return dict(total=total, sin_codigo=sin_codigo, con_codigo=con_codigo, con_codigo_link=con_codigo_link)
 
+
+# === RUTAS ===
 @app.route("/", methods=["GET"])
 @app.route("/<codigo>", methods=["GET"])
 def index(codigo=None):
@@ -62,7 +72,7 @@ def index(codigo=None):
 
     desc = request.args.get("desc", "").strip()
     codigos = sorted(df.iloc[:, 1].dropna().astype(str).unique())
-    descripciones = sorted(df.iloc[:, 2].dropna().astype(str).unique())  # tercera columna = descripción
+    descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())  # ✅ columna 4
 
     if codigo:
         result = buscar_codigo(codigo) or "No se encontró el código."
@@ -73,6 +83,7 @@ def index(codigo=None):
 
     return render_template("index.html", result=result, multiples=multiples, stats=stats,
                            codigos=codigos, descripciones=descripciones)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
