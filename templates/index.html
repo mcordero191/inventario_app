@@ -13,9 +13,10 @@
   input { padding: 8px; width: 300px; border: 1px solid #ccc; border-radius: 4px; }
   button { padding: 8px 14px; background: #0072CE; color: white; border: none; border-radius: 4px; cursor: pointer; }
   button:hover { background: #005BB5; }
-  table { border-collapse: collapse; margin-top: 20px; width: 80%; background: white; border-radius: 6px; overflow: hidden; }
+  table { border-collapse: collapse; margin-top: 20px; width: 80%; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
   th, td { border: 1px solid #ccc; padding: 10px; text-align: left; vertical-align: top; }
-  th { background-color: #E9ECF5; width: 25%; }
+  th { background-color: #E9ECF5; width: 25%; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { white-space: pre-wrap; }
   .doc-section { margin-top: 40px; }
   ul.suggestions {
     list-style: none;
@@ -31,13 +32,9 @@
     margin: 0;
     z-index: 100;
   }
-  ul.suggestions li {
-    padding: 8px;
-    cursor: pointer;
-  }
-  ul.suggestions li:hover {
-    background: #E9ECF5;
-  }
+  ul.suggestions li { padding: 8px; cursor: pointer; }
+  ul.suggestions li:hover { background: #E9ECF5; }
+  .doc-section h3 { color: #002C77; border-bottom: 2px solid #0072CE; display: inline-block; padding-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -47,7 +44,7 @@
   </header>
 
   <main>
-    <form method="POST" autocomplete="off">
+    <form id="searchForm" autocomplete="off">
         <input type="text" id="codigo" name="codigo" placeholder="Ingrese el código (e.g. A-01-3ALMINS000037)" required>
         <button type="submit">Buscar</button>
         <ul id="suggestions" class="suggestions" style="display:none;"></ul>
@@ -70,7 +67,7 @@
 
         {% if result.Documento %}
           <div class="doc-section">
-            <h3>Documento incrustado:</h3>
+            <h3>DOCUMENTO INCRUSTADO</h3>
             {{ result.Documento|safe }}
           </div>
         {% endif %}
@@ -79,9 +76,18 @@
   </main>
 
   <script>
+    const form = document.getElementById('searchForm');
     const input = document.getElementById('codigo');
     const suggestions = document.getElementById('suggestions');
 
+    // ✅ Redirigir al formato /codigo en vez de enviar POST
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = input.value.trim();
+      if (code) window.location.href = '/' + encodeURIComponent(code);
+    });
+
+    // 🔍 Autocompletado
     input.addEventListener('input', async () => {
       const query = input.value.trim();
       if (query.length < 2) { suggestions.style.display = 'none'; return; }
@@ -97,7 +103,7 @@
       if (e.target.tagName === 'LI') {
         input.value = e.target.textContent;
         suggestions.style.display = 'none';
-        input.form.submit();
+        window.location.href = '/' + encodeURIComponent(input.value.trim());
       }
     });
 
