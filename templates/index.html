@@ -10,21 +10,18 @@
   h1 { font-size: 1.8em; margin: 0; }
   h2.subtitle { font-size: 1.2em; font-weight: normal; color: #dbe4ff; margin: 5px 0 0 0; }
   main { padding: 40px; }
-  form { margin-bottom: 20px; position: relative; width: 320px; }
-  input { padding: 8px; width: 300px; border: 1px solid #ccc; border-radius: 4px; }
-  button { padding: 8px 14px; background: #0072CE; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  form { margin-bottom: 20px; width: 360px; }
+  input, button { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+  input { width: 260px; }
+  button { background: #0072CE; color: white; cursor: pointer; }
   button:hover { background: #005BB5; }
   table { border-collapse: collapse; margin-top: 20px; width: 90%; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-  th, td { border: 1px solid #ccc; padding: 10px; text-align: left; vertical-align: top; }
+  th, td { border: 1px solid #ccc; padding: 10px; vertical-align: top; }
   th { background-color: #E9ECF5; text-transform: uppercase; letter-spacing: 0.5px; width: 25%; }
   .doc-section { margin-top: 40px; }
-  ul.suggestions { list-style: none; position: absolute; top: 35px; width: 300px; border: 1px solid #ccc; background: white; border-radius: 4px; max-height: 150px; overflow-y: auto; padding-left: 0; margin: 0; z-index: 100; }
-  ul.suggestions li { padding: 8px; cursor: pointer; }
-  ul.suggestions li:hover { background: #E9ECF5; }
   .stats { background: white; border-radius: 6px; padding: 10px 20px; width: fit-content; box-shadow: 0 1px 5px rgba(0,0,0,0.1); margin-bottom: 30px; }
   .stats strong { color: #002C77; }
   .multiple-item { background: #fff; border-radius: 6px; padding: 10px; margin: 10px 0; box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
-  .multiple-item:hover { background: #E9ECF5; }
 </style>
 </head>
 <body>
@@ -32,28 +29,36 @@
     <img src="https://red.pucp.edu.pe/riel/files/2019/07/LOGO-DE-PUCP.jpg" alt="PUCP">
     <div>
       <h1>ALMACÉN DE ELECTRICIDAD Y ELECTRÓNICA</h1>
-      <h2 class="subtitle">DATOS TÉCNICOS</h2>
     </div>
   </header>
 
   <main>
     <div class="stats">
-      <strong>Resumen:</strong>
-      {{ stats.con_codigo_link }} con código y link ·
-      {{ stats.con_codigo }} con código ·
-      {{ stats.sin_codigo }} sin código ·
+      <strong>Número de items:</strong>
+      {{ stats.con_codigo_link }} con código y link,
+      {{ stats.con_codigo }} con código,
+      {{ stats.sin_codigo }} sin código,
       Total: {{ stats.total }}
     </div>
 
-    <form id="searchForm" autocomplete="off">
-        <input type="text" id="codigo" placeholder="Buscar por código (e.g. A-01-3ALMINS000037)">
-        <button type="submit">Buscar</button>
-        <ul id="suggestions" class="suggestions" style="display:none;"></ul>
+    <form id="searchForm">
+      <input list="codigos" id="codigo" placeholder="Seleccionar código" required>
+      <datalist id="codigos">
+        {% for c in codigos %}
+          <option value="{{ c }}">
+        {% endfor %}
+      </datalist>
+      <button type="submit">Buscar</button>
     </form>
 
-    <form id="descForm" autocomplete="off">
-        <input type="text" id="desc" name="desc" placeholder="Buscar por descripción (e.g. osciloscopio)">
-        <button type="submit">Buscar</button>
+    <form id="descForm">
+      <input list="descripciones" id="desc" placeholder="Seleccionar descripción" required>
+      <datalist id="descripciones">
+        {% for d in descripciones %}
+          <option value="{{ d }}">
+        {% endfor %}
+      </datalist>
+      <button type="submit">Buscar</button>
     </form>
 
     {% if result %}
@@ -67,12 +72,8 @@
             {% endif %}
           {% endfor %}
         </table>
-
         {% if result.Documento %}
-          <div class="doc-section">
-            <h3>DOCUMENTO INCRUSTADO</h3>
-            {{ result.Documento|safe }}
-          </div>
+          <div class="doc-section"><h3>DOCUMENTO INCRUSTADO</h3>{{ result.Documento|safe }}</div>
         {% endif %}
       {% endif %}
     {% endif %}
@@ -81,7 +82,7 @@
       {% if multiples is string %}
         <p><strong>{{ multiples }}</strong></p>
       {% else %}
-        <h3>Resultados de búsqueda ({{ multiples|length }})</h3>
+        <h3>Resultados ({{ multiples|length }})</h3>
         {% for item in multiples %}
           <div class="multiple-item">
             <strong>{{ item.get(df.columns[1], '-') }}</strong> — {{ item.get(df.columns[2], '-') }}
@@ -93,48 +94,17 @@
   </main>
 
   <script>
-    const form = document.getElementById('searchForm');
-    const input = document.getElementById('codigo');
+    const codeForm = document.getElementById('searchForm');
     const descForm = document.getElementById('descForm');
-    const descInput = document.getElementById('desc');
-    const suggestions = document.getElementById('suggestions');
-
-    // Redirigir por código
-    form.addEventListener('submit', (e) => {
+    codeForm.addEventListener('submit', e => {
       e.preventDefault();
-      const code = input.value.trim();
+      const code = document.getElementById('codigo').value.trim();
       if (code) window.location.href = '/' + encodeURIComponent(code);
     });
-
-    // Búsqueda por descripción
-    descForm.addEventListener('submit', (e) => {
+    descForm.addEventListener('submit', e => {
       e.preventDefault();
-      const desc = descInput.value.trim();
+      const desc = document.getElementById('desc').value.trim();
       if (desc) window.location.href = '/?desc=' + encodeURIComponent(desc);
-    });
-
-    // Autocompletado
-    input.addEventListener('input', async () => {
-      const query = input.value.trim();
-      if (query.length < 2) { suggestions.style.display = 'none'; return; }
-      const response = await fetch(`/autocomplete?q=${query}`);
-      const data = await response.json();
-      if (data.length === 0) { suggestions.style.display = 'none'; return; }
-
-      suggestions.innerHTML = data.map(code => `<li>${code}</li>`).join('');
-      suggestions.style.display = 'block';
-    });
-
-    suggestions.addEventListener('click', e => {
-      if (e.target.tagName === 'LI') {
-        input.value = e.target.textContent;
-        suggestions.style.display = 'none';
-        window.location.href = '/' + encodeURIComponent(input.value.trim());
-      }
-    });
-
-    document.addEventListener('click', e => {
-      if (!input.contains(e.target)) suggestions.style.display = 'none';
     });
   </script>
 </body>
