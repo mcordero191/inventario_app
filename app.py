@@ -95,14 +95,14 @@ def buscar():
 
     # Caso: sin ningún código asociado
     if len(codigos) == 0:
-        mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
+        mensaje = f"No existe ningún item que coincida con la descripción «{desc}»."
         return render_template("seleccion.html", mensaje=mensaje)
 
     # Caso: un solo código → redirigir directamente
     elif len(codigos) == 1:
         codigo = codigos[0].strip()
         if codigo == "" or codigo.lower() in ["nan", "none"]:
-            mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
+            mensaje = f"El item con descripción «{desc}» todavía no tiene un código asociado."
             return render_template("seleccion.html", mensaje=mensaje)
         else:
             return redirect(f"/{codigo}")
@@ -111,7 +111,7 @@ def buscar():
     else:
         codigos_validos = [c for c in codigos if str(c).strip() not in ["", "nan", "none"]]
         if not codigos_validos:
-            mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
+            mensaje = f"Los items con descripción «{desc}» todavía no tienen un código asociado."
             return render_template("seleccion.html", mensaje=mensaje)
 
         coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos_validos)][[df.columns[1], df.columns[3]]]
