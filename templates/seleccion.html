@@ -40,8 +40,27 @@
   }
   .back-btn:hover { background: #005BB5; }
 
-  ul { list-style: none; padding-left: 0; }
-  li { margin-bottom: 8px; }
+  /* Tabla de coincidencias */
+  table {
+    border-collapse: collapse;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    margin-top: 20px;
+    width: 95%;
+  }
+  th, td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: left;
+  }
+  th {
+    background: #E9ECF5;
+    text-transform: uppercase;
+  }
+  tr:hover {
+    background: #F5F8FF;
+  }
 </style>
 </head>
 <body>
@@ -50,13 +69,27 @@
       <strong>{{ mensaje }}</strong>
     </div>
     <button class="back-btn" onclick="window.location.href='/'">← Regresar al inicio</button>
-  {% else %}
+
+  {% elif items %}
     <h2>Coincidencias para "{{ desc }}"</h2>
-    <ul>
-      {% for c in codigos %}
-        <li><a href="/{{ c }}">{{ c }}</a></li>
-      {% endfor %}
-    </ul>
+
+    <table>
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td><a href="/{{ item[col_codigo] }}">{{ item[col_codigo] }}</a></td>
+            <td>{{ item[col_desc] }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
   {% endif %}
 </body>
 </html>
