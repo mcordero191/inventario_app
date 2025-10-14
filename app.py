@@ -49,18 +49,31 @@ def buscar_codigo(codigo):
     return None
 
 @app.route("/", methods=["GET", "POST"])
-def index():
+@app.route("/<codigo>", methods=["GET", "POST"])
+def index(codigo=None):
+    """Permite búsqueda por formulario o acceso directo desde URL."""
     result = None
     if request.method == "POST":
         codigo = request.form["codigo"].strip()
+    elif codigo:
+        codigo = codigo.strip()
+    if codigo:
         result = buscar_codigo(codigo) or "No se encontró el código."
     return render_template("index.html", result=result)
+    
+# @app.route("/", methods=["GET", "POST"])
+# def index():
+#     result = None
+#     if request.method == "POST":
+#         codigo = request.form["codigo"].strip()
+#         result = buscar_codigo(codigo) or "No se encontró el código."
+#     return render_template("index.html", result=result)
 
-@app.route("/<codigo>")
-def direct_lookup(codigo):
-    """Permite acceso directo con URL tipo /A-01-3ALMINS000037"""
-    result = buscar_codigo(codigo.strip()) or "No se encontró el código."
-    return render_template("index.html", result=result)
+# @app.route("/<codigo>")
+# def direct_lookup(codigo):
+#     """Permite acceso directo con URL tipo /A-01-3ALMINS000037"""
+#     result = buscar_codigo(codigo.strip()) or "No se encontró el código."
+#     return render_template("index.html", result=result)
 
 @app.route("/autocomplete")
 def autocomplete():
