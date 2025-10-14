@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from markupsafe import Markup
 import pandas as pd
 import openpyxl
@@ -20,6 +20,7 @@ if "Link" in df.columns:
         cell = row[0]
         links.append(cell.hyperlink.target if cell.hyperlink else None)
     df["Link"] = links[:len(df)]
+
 
 # === FUNCIONES ===
 def preparar_registro(record):
@@ -46,15 +47,15 @@ def buscar_codigo(codigo):
     return None
 
 
-def buscar_descripcion(desc):
-    """Busca por descripción (columna 4)."""
+def buscar_codigo_por_descripcion(desc):
+    """Busca códigos que coincidan con la descripción (columna 4)."""
     desc = desc.lower().strip()
-    matches = df[df.iloc[:, 3].astype(str).str.lower().str.contains(desc)]
-    return [preparar_registro(r) for r in matches.to_dict(orient="records")]
+    matches = df[df.iloc[:, 3].astype(str).str.lower().str.contains(desc, na=False)]
+    codigos = matches.iloc[:, 1].dropna().astype(str).unique().tolist()
+    return codigos
 
 
 def resumen_general():
-    """Cuenta los elementos con/sin código y con link."""
     total = len(df)
     sin_codigo = df[df.iloc[:, 1].isna()].shape[0]
     con_codigo = total - sin_codigo
@@ -67,22 +68,33 @@ def resumen_general():
 @app.route("/<codigo>", methods=["GET"])
 def index(codigo=None):
     result = None
-    multiples = None
     stats = resumen_general()
-
-    desc = request.args.get("desc", "").strip()
     codigos = sorted(df.iloc[:, 1].dropna().astype(str).unique())
-    descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())  # ✅ columna 4
+    descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())  # columna 4
 
     if codigo:
         result = buscar_codigo(codigo) or "No se encontró el código."
-    elif desc:
-        multiples = buscar_descripcion(desc)
-        if not multiples:
-            multiples = "No se encontraron coincidencias."
 
-    return render_template("index.html", result=result, multiples=multiples, stats=stats,
+    return render_template("index.html", result=result, stats=stats,
                            codigos=codigos, descripciones=descripciones)
+
+
+@app.route("/buscar", methods=["GET"])
+def buscar():
+    """Procesa la búsqueda por descripción y redirige al código."""
+    desc = request.args.get("desc", "").strip()
+    if not desc:
+        return redirect(url_for("index"))
+
+    codigos = buscar_codigo_por_descripcion(desc)
+    if len(codigos) == 0:
+        return render_template("seleccion.html", mensaje=f"No se encontró ningún resultado para '{desc}'.")
+    elif len(codigos) == 1:
+        # Solo una coincidencia → redirigir directamente
+        return redirect(f"/{codigos[0]}")
+    else:
+        # Varias coincidencias → mostrar lista para elegir
+        return render_template("seleccion.html", desc=desc, codigos=codigos)
 
 
 if __name__ == "__main__":
