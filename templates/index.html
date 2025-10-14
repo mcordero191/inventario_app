@@ -60,7 +60,7 @@
         <table>
           {% for key, value in result.items() %}
             {% if key not in ['Link', 'Documento'] %}
-              <tr><th>{{ key }}</th><td>{{ value|safe }}</td></tr>
+              <tr><th>{{ key.upper() }}</th><td>{{ value|safe }}</td></tr>
             {% endif %}
           {% endfor %}
         </table>
@@ -93,7 +93,7 @@
     suggestions.addEventListener('click', e => {
       if (e.target.tagName === 'LI') {
         input.value = e.target.textContent;
-        suggestions.style.display = 'none';
+        suggestions.style.display = '-';
         input.form.submit();
       }
     });
