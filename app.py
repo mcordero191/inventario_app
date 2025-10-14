@@ -87,15 +87,18 @@ def buscar():
         return redirect(url_for("index"))
 
     codigos = buscar_codigo_por_descripcion(desc)
+
+    # 🧩 Si no hay ningún código asociado a la descripción
     if len(codigos) == 0:
-        return render_template("seleccion.html", mensaje=f"No se encontró ningún resultado para '{desc}'.")
+        mensaje = f"La descripción «{desc}» no tiene un código registrado en el inventario."
+        return render_template("seleccion.html", mensaje=mensaje)
+
+    # ✅ Si hay solo un código → redirigir directamente a su ficha
     elif len(codigos) == 1:
-        # Solo una coincidencia → redirigir directamente
         return redirect(f"/{codigos[0]}")
+
+    # 🧭 Si hay varios códigos → mostrar lista de opciones
     else:
-        # Varias coincidencias → mostrar lista para elegir
         return render_template("seleccion.html", desc=desc, codigos=codigos)
-
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
