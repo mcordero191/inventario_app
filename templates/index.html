@@ -18,14 +18,9 @@
   table { border-collapse: collapse; margin-top: 20px; width: 95%; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
   th, td { border: 1px solid #ccc; padding: 10px; vertical-align: top; text-align: left; }
   th { background-color: #E9ECF5; text-transform: uppercase; letter-spacing: 0.5px; width: 25%; }
-  td { white-space: pre-wrap; }
   .doc-section { margin-top: 40px; }
   .stats { background: white; border-radius: 6px; padding: 10px 20px; width: fit-content; box-shadow: 0 1px 5px rgba(0,0,0,0.1); margin-bottom: 30px; }
   .stats strong { color: #002C77; }
-  .multiple-table { width: 95%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 20px; }
-  .multiple-table th { background-color: #E9ECF5; text-transform: uppercase; }
-  .multiple-table th, .multiple-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  .multiple-table tr:hover { background-color: #F8FAFF; }
 </style>
 </head>
 <body>
@@ -58,8 +53,8 @@
     </form>
 
     <!-- BÚSQUEDA POR DESCRIPCIÓN -->
-    <form id="descForm">
-      <input list="descripciones" id="desc" placeholder="Seleccionar descripción" required>
+    <form id="descForm" action="/buscar" method="get">
+      <input list="descripciones" id="desc" name="desc" placeholder="Seleccionar descripción" required>
       <datalist id="descripciones">
         {% for d in descripciones %}
           <option value="{{ d }}">
@@ -68,7 +63,7 @@
       <button type="submit">Buscar</button>
     </form>
 
-    <!-- RESULTADO DE BÚSQUEDA POR CÓDIGO -->
+    <!-- RESULTADO DE BÚSQUEDA -->
     {% if result %}
       {% if result is string %}
         <p><strong>{{ result }}</strong></p>
@@ -91,50 +86,14 @@
         {% endif %}
       {% endif %}
     {% endif %}
-
-    <!-- RESULTADOS MÚLTIPLES (POR DESCRIPCIÓN) -->
-    {% if multiples %}
-      {% if multiples is string %}
-        <p><strong>{{ multiples }}</strong></p>
-      {% else %}
-        <h3>Resultados ({{ multiples|length }})</h3>
-        <table class="multiple-table">
-          <thead>
-            <tr>
-              <th>CÓDIGO</th>
-              <th>DESCRIPCIÓN</th>
-              <th>ENLACE</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in multiples %}
-              <tr>
-                <td>{{ item.get(df.columns[1], '-') }}</td>
-                <td>{{ item.get(df.columns[3], '-') }}</td>
-                <td>{% if item.Enlace %}{{ item.Enlace|safe }}{% else %}-{% endif %}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% endif %}
-    {% endif %}
   </main>
 
   <script>
-    // --- Búsqueda por código ---
     const codeForm = document.getElementById('searchForm');
     codeForm.addEventListener('submit', e => {
       e.preventDefault();
       const code = document.getElementById('codigo').value.trim();
       if (code) window.location.href = '/' + encodeURIComponent(code);
-    });
-
-    // --- Búsqueda por descripción ---
-    const descForm = document.getElementById('descForm');
-    descForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const desc = document.getElementById('desc').value.trim();
-      if (desc) window.location.href = '/?desc=' + encodeURIComponent(desc);
     });
   </script>
 </body>
