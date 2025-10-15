@@ -19,7 +19,7 @@
     border-radius: 8px;
     padding: 30px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    width: 400px;
+    width: 600px;
   }
   p { font-size: 1.1em; margin-bottom: 20px; }
   button {
@@ -49,8 +49,8 @@
 
   <form method="POST">
     <p>¿Confirmas la devolución del artículo?:</p>
-    <p><strong>Código del artículo:</strong> {{ codigo }}</p>
-    <p><strong>Descripción del artículo:</strong> {{ desc }}</p>
+    <p><strong>Código:</strong> {{ codigo }}</p>
+    <p><strong>Descripción:</strong> {{ desc }}</p>
 
     <button type="submit" class="confirm-btn">Confirmar devolución</button>
     <button type="button" class="cancel-btn" onclick="window.location.href='/{{ codigo }}'">Cancelar</button>
