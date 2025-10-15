@@ -22,20 +22,14 @@
     height: 60px;
     margin-right: 20px;
   }
-  h1 {
-    color: #002C77;
-    margin: 0;
-  }
-  h2 {
-    margin-top: 0;
-    color: #444;
-  }
-  form { margin-bottom: 20px; }
-  select, input {
+  h1 { color: #002C77; margin: 0; }
+  h2 { color: #444; margin-top: 0; }
+  form { margin-bottom: 20px; position: relative; }
+  input[type="text"] {
     padding: 8px;
+    width: 280px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    margin-right: 10px;
   }
   button {
     padding: 8px 16px;
@@ -46,29 +40,30 @@
     background: #0072CE;
   }
   button:hover { background: #005BB5; }
-  .table-container {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    width: fit-content;
+  .suggestions {
+    display: none;
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    list-style: none;
+    margin-top: 4px;
+    padding-left: 0;
+    width: 280px;
+    z-index: 1000;
   }
+  .suggestions li { padding: 8px; cursor: pointer; }
+  .suggestions li:hover { background: #E9ECF5; }
   table {
     border-collapse: collapse;
-    width: 100%;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    width: 600px;
   }
-  th, td {
-    text-align: left;
-    padding: 8px 10px;
-    border-bottom: 1px solid #ddd;
-  }
-  th {
-    background: #E9ECF5;
-    text-transform: uppercase;
-  }
-  .estado {
-    font-weight: bold;
-  }
+  th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+  th { background: #E9ECF5; text-transform: uppercase; }
+  .estado { font-weight: bold; }
   .disponible { color: green; }
   .prestado { color: #B00020; }
 </style>
@@ -81,16 +76,18 @@
 
   <h2>Datos técnicos del inventario</h2>
 
-  <form method="get" action="/">
-    <label for="codigo">Buscar por código:</label>
-    <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-3ALMINS000037">
+  <form id="codeForm" method="get" action="/">
+    <label for="codigo">Buscar por código:</label><br>
+    <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-3ALMINS000037" autocomplete="off">
     <button type="submit">Buscar</button>
+    <ul id="code-suggest" class="suggestions"></ul>
   </form>
-  
-  <form method="get" action="/buscar">
-    <label for="desc">Buscar por descripción:</label>
-    <input type="text" id="desc" name="desc" placeholder="Ej. osciloscopio, fuente, multímetro">
+
+  <form id="descForm" method="get" action="/buscar">
+    <label for="desc">Buscar por descripción:</label><br>
+    <input type="text" id="desc" name="desc" placeholder="Ej. osciloscopio, fuente, multímetro" autocomplete="off">
     <button type="submit">Buscar</button>
+    <ul id="desc-suggest" class="suggestions"></ul>
   </form>
 
   {% if result %}
@@ -100,36 +97,33 @@
       </div>
       <button onclick="window.location.href='/'" style="margin-top:15px;">← Regresar al inicio</button>
     {% else %}
-      <div class="table-container">
-        <table>
-          {% for key, value in result.items() %}
-            {% if key not in ['Link', 'Documento', 'no_agregado', 'mensaje'] %}
-              <tr>
-                <th>{{ key.upper() }}</th>
-                <td>
-                  {% if key == 'Estado' %}
-                    <span class="estado {{ 'disponible' if value == 'Disponible' else 'prestado' }}">
-                      {{ value }}
-                    </span>
-                  {% else %}
-                    {{ value if value not in [None, 'nan', 'NaN'] else '-' }}
-                  {% endif %}
-                </td>
-              </tr>
-            {% endif %}
-          {% endfor %}
-        </table>
+      <h3>Detalles del artículo</h3>
+      <table>
+        {% for key, value in result.items() %}
+          {% if key not in ['Link', 'Documento', 'no_agregado', 'mensaje'] %}
+            <tr>
+              <th>{{ key.upper() }}</th>
+              <td>
+                {% if key == 'Estado' %}
+                  <span class="estado {{ 'disponible' if value == 'Disponible' else 'prestado' }}">{{ value }}</span>
+                {% else %}
+                  {{ value if value not in [None, 'nan', 'NaN'] else '-' }}
+                {% endif %}
+              </td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </table>
 
-        {% if result.Estado == 'Disponible' %}
-          <form action="/prestar/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
-            <button>Prestar</button>
-          </form>
-        {% elif result.Estado == 'Prestado' %}
-          <form action="/devolver/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
-            <button>Devolver</button>
-          </form>
-        {% endif %}
-      </div>
+      {% if result.Estado == 'Disponible' %}
+        <form action="/prestar/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
+          <button>Prestar</button>
+        </form>
+      {% elif result.Estado == 'Prestado' %}
+        <form action="/devolver/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
+          <button>Devolver</button>
+        </form>
+      {% endif %}
 
       {% if result.Documento %}
         <div style="margin-top:25px;">
@@ -139,5 +133,44 @@
       {% endif %}
     {% endif %}
   {% endif %}
+
+<script>
+  function setupAutocomplete(inputId, listId, kind, onPick) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    let lastController = null;
+
+    input.addEventListener('input', async () => {
+      const q = input.value.trim();
+      if (q.length < 1) { list.style.display = 'none'; list.innerHTML=''; return; }
+
+      try {
+        if (lastController) lastController.abort();
+        lastController = new AbortController();
+        const res = await fetch(`/autocomplete?q=${encodeURIComponent(q)}&kind=${encodeURIComponent(kind)}`, { signal: lastController.signal });
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) { list.style.display = 'none'; return; }
+        list.innerHTML = data.map(v => `<li data-v="${v.replace(/"/g,'&quot;')}">${v}</li>`).join('');
+        list.style.display = 'block';
+      } catch {}
+    });
+
+    list.addEventListener('click', e => {
+      if (e.target.tagName === 'LI') {
+        const val = e.target.getAttribute('data-v');
+        input.value = val;
+        list.style.display = 'none';
+        onPick(val);
+      }
+    });
+
+    document.addEventListener('click', e => {
+      if (!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
+    });
+  }
+
+  setupAutocomplete('codigo', 'code-suggest', 'code', val => window.location.href = '/' + encodeURIComponent(val.trim()));
+  setupAutocomplete('desc', 'desc-suggest', 'desc', val => window.location.href = '/buscar?desc=' + encodeURIComponent(val.trim()));
+</script>
 </body>
 </html>
