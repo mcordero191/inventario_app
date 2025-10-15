@@ -148,7 +148,7 @@ def buscar():
 
     # Obtener código, descripción y estado actual
     coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)][[df.columns[1], df.columns[3]]]
-    coincidencias = coincidencias.rename(columns={df.columns[1]: "Código", df.columns[3]: "Descripción"})
+    # coincidencias = coincidencias.rename(columns={df.columns[1]: "Codigo", df.columns[3]: "Descripcion"})
 
     items = []
     for _, row in coincidencias.iterrows():
@@ -171,7 +171,7 @@ def prestar(codigo):
         actualizar_estado(codigo, "Prestado", alumno)
         return redirect(f"/{codigo}")
     row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
-    return render_template("prestar.html", codigo=codigo, desc=row["Descripcion"])
+    return render_template("prestar.html", codigo=codigo, desc=row["Descripcion"].dropna().astype(str))
 
 
 @app.route("/devolver/<codigo>", methods=["GET", "POST"])
@@ -180,7 +180,7 @@ def devolver(codigo):
         actualizar_estado(codigo, "Disponible")
         return redirect(f"/{codigo}")
     row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
-    return render_template("devolver.html", codigo=codigo, desc=row["Descripcion"])
+    return render_template("devolver.html", codigo=codigo, desc=row["Descripcion"].dropna().astype(str))
 
 
 if __name__ == "__main__":
