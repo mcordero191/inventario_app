@@ -14,15 +14,15 @@ DB_FILE = "estado.db"
 
 df = pd.read_excel(EXCEL_FILE, header=2, sheet_name=0)
 
-wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
-ws = wb.active
-if "Link" in df.columns:
-    col_idx = list(df.columns).index("Link") + 1
-    links = []
-    for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
-        cell = row[0]
-        links.append(cell.hyperlink.target if cell.hyperlink else None)
-    df["Link"] = links[:len(df)]
+# wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
+# ws = wb.active
+# if "Link" in df.columns:
+#     col_idx = list(df.columns).index("Link") + 1
+#     links = []
+#     for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
+#         cell = row[0]
+#         links.append(cell.hyperlink.target if cell.hyperlink else None)
+#     df["Link"] = links[:len(df)]
 
 
 # === FUNCIÓN DE INICIALIZACIÓN DE BASE DE DATOS ===
