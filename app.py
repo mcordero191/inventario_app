@@ -130,7 +130,6 @@ def autocomplete():
 
     return jsonify(suggestions)
 
-
 @app.route("/buscar", methods=["GET"])
 def buscar():
     desc = request.args.get("desc", "").strip()
@@ -146,9 +145,22 @@ def buscar():
     if len(codigos) == 1:
         return redirect(f"/{codigos[0]}")
 
+    # Obtener código, descripción y estado actual
     coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)][[df.columns[1], df.columns[3]]]
-    items = coincidencias.to_dict(orient="records")
-    return render_template("seleccion.html", desc=desc, items=items, col_codigo=df.columns[1], col_desc=df.columns[3])
+    coincidencias = coincidencias.rename(columns={df.columns[1]: "Código", df.columns[3]: "Descripción"})
+
+    items = []
+    for _, row in coincidencias.iterrows():
+        codigo = str(row["Código"])
+        estado, prestado_a = get_estado(codigo)
+        items.append({
+            "Código": codigo,
+            "Descripción": row["Descripción"],
+            "Estado": estado,
+            "Prestado_a": prestado_a if prestado_a else "-"
+        })
+
+    return render_template("seleccion.html", desc=desc, items=items)
 
 
 @app.route("/prestar/<codigo>", methods=["GET", "POST"])
