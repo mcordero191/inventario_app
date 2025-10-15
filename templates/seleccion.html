@@ -12,13 +12,8 @@
     padding: 40px;
   }
   h2 { color: #002C77; }
-  a {
-    text-decoration: none;
-    color: #0072CE;
-  }
+  a { text-decoration: none; color: #0072CE; }
   a:hover { text-decoration: underline; }
-
-  /* Caja de mensaje de error */
   .error-box {
     background: #FFE5E5;
     color: #B00020;
@@ -28,8 +23,6 @@
     box-shadow: 0 1px 5px rgba(0,0,0,0.1);
     margin-bottom: 15px;
   }
-
-  /* Botón para regresar */
   .back-btn {
     padding: 8px 16px;
     background: #0072CE;
@@ -39,8 +32,6 @@
     cursor: pointer;
   }
   .back-btn:hover { background: #005BB5; }
-
-  /* Tabla de coincidencias */
   table {
     border-collapse: collapse;
     background: white;
@@ -58,27 +49,18 @@
     background: #E9ECF5;
     text-transform: uppercase;
   }
-  tr:hover {
-    background: #F5F8FF;
-  }
+  tr:hover { background: #F5F8FF; }
 </style>
 </head>
 <body>
   {% if mensaje %}
-    <div class="error-box">
-      <strong>{{ mensaje }}</strong>
-    </div>
+    <div class="error-box"><strong>{{ mensaje }}</strong></div>
     <button class="back-btn" onclick="window.location.href='/'">← Regresar al inicio</button>
-
   {% elif items %}
     <h2>Coincidencias para "{{ desc }}"</h2>
-
     <table>
       <thead>
-        <tr>
-          <th>CÓDIGO</th>
-          <th>DESCRIPCIÓN</th>
-        </tr>
+        <tr><th>CÓDIGO</th><th>DESCRIPCIÓN</th></tr>
       </thead>
       <tbody>
         {% for item in items %}
@@ -89,7 +71,6 @@
         {% endfor %}
       </tbody>
     </table>
-
   {% endif %}
 </body>
 </html>
