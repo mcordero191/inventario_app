@@ -75,7 +75,7 @@ def preparar_registro(record, codigo):
     estado, prestado_a, fecha_prestamo = get_estado(codigo)
     record["Estado"] = estado
     record["Prestado_a"] = prestado_a if prestado_a else "-"
-    record["Fecha de préstamo"] = fecha_prestamo
+    record["Fecha_de_prestamo"] = fecha_prestamo
     return record
 
 
@@ -152,11 +152,11 @@ def buscar():
 
     items = []
     for _, row in coincidencias.iterrows():
-        codigo = str(row["Código"])
+        codigo = str(row["Codigo"])
         estado, prestado_a = get_estado(codigo)
         items.append({
             "Código": codigo,
-            "Descripción": row["Descripción"],
+            "Descripción": row["Descripcion"],
             "Estado": estado,
             "Prestado_a": prestado_a if prestado_a else "-"
         })
