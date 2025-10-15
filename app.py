@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from markupsafe import Markup
 import pandas as pd
 import openpyxl
@@ -8,26 +8,15 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# === CARGA DEL EXCEL ===
 EXCEL_FILE = "INVENTARIO.xlsx"
 DB_FILE = "estado.db"
 
+# === CARGA DEL EXCEL ===
 df = pd.read_excel(EXCEL_FILE, header=2, sheet_name=0)
 
-# wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
-# ws = wb.active
-# if "Link" in df.columns:
-#     col_idx = list(df.columns).index("Link") + 1
-#     links = []
-#     for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
-#         cell = row[0]
-#         links.append(cell.hyperlink.target if cell.hyperlink else None)
-#     df["Link"] = links[:len(df)]
-
-
-# === FUNCIÓN DE INICIALIZACIÓN DE BASE DE DATOS ===
+# === BASE DE DATOS LOCAL ===
 def init_db():
-    """Crea la base de datos si no existe y la tabla de estados."""
+    """Crea la base si no existe."""
     if not os.path.exists(DB_FILE):
         print("Creando base de datos local:", DB_FILE)
     conn = sqlite3.connect(DB_FILE)
@@ -53,7 +42,6 @@ def get_estado(codigo):
     c.execute("SELECT estado, prestado_a FROM inventario_estado WHERE codigo = ?", (codigo,))
     row = c.fetchone()
     if not row:
-        # si no existe, crearlo automáticamente como disponible
         c.execute("INSERT INTO inventario_estado (codigo, estado) VALUES (?, 'Disponible')", (codigo,))
         conn.commit()
         conn.close()
@@ -82,19 +70,9 @@ def actualizar_estado(codigo, estado, prestado_a=None):
 
 
 def preparar_registro(record, codigo):
-    # """Agrega estado y documento incrustado."""
-    
-    # if "Link" in record and pd.notna(record["Link"]):
-    #     link = str(record["Link"]).strip()
-    #     record["Enlace"] = Markup(f'<a href="{link}" target="_blank">{link}</a>')
-    #     if link.endswith(".pdf"):
-    #         record["Documento"] = Markup(f'<embed src="{link}" type="application/pdf" width="100%" height="600px">')
-    #     elif link.endswith((".png", ".jpg", ".jpeg")):
-    #         record["Documento"] = Markup(f'<img src="{link}" style="max-width:100%;">')
-    #     else:
-    #         record["Documento"] = Markup(f'<iframe src="{link}" width="100%" height="600px"></iframe>')
+    """Agrega estado, enlace y documento incrustado."""
+    record["Codigo"] = codigo  # campo uniforme para HTML
     estado, prestado_a = get_estado(codigo)
-    record["Codigo"] = codigo  # ← campo uniforme para HTML
     record["Estado"] = estado
     record["Prestado_a"] = prestado_a if prestado_a else "-"
     return record
@@ -114,9 +92,14 @@ def buscar_codigo_por_descripcion(desc):
 
 
 # === RUTAS ===
-@app.route("/")
-@app.route("/<codigo>")
+@app.route("/", methods=["GET"])
+@app.route("/<codigo>", methods=["GET"])
 def index(codigo=None):
+    """Vista principal: búsqueda por código o descripción."""
+    q_codigo = request.args.get("codigo", "").strip()
+    if q_codigo:
+        return redirect(f"/{q_codigo}")
+
     result = None
     codigos = sorted(df.iloc[:, 1].dropna().astype(str).unique())
     descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())
@@ -129,19 +112,43 @@ def index(codigo=None):
     return render_template("index.html", result=result, codigos=codigos, descripciones=descripciones)
 
 
-@app.route("/buscar")
+@app.get("/autocomplete")
+def autocomplete():
+    """Devuelve sugerencias para autocompletar."""
+    q = (request.args.get("q") or "").strip().lower()
+    kind = (request.args.get("kind") or "code").lower()
+
+    if kind == "desc":
+        col = df.iloc[:, 3].dropna().astype(str)
+    else:
+        col = df.iloc[:, 1].dropna().astype(str)
+
+    if not q:
+        suggestions = col.unique().tolist()[:10]
+    else:
+        suggestions = [v for v in col if q in v.lower()][:10]
+
+    return jsonify(suggestions)
+
+
+@app.route("/buscar", methods=["GET"])
 def buscar():
     desc = request.args.get("desc", "").strip()
+    if not desc:
+        return redirect(url_for("index"))
+
     codigos = buscar_codigo_por_descripcion(desc)
+
     if len(codigos) == 0:
         mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
         return render_template("seleccion.html", mensaje=mensaje)
-    elif len(codigos) == 1:
+
+    if len(codigos) == 1:
         return redirect(f"/{codigos[0]}")
-    else:
-        coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)][[df.columns[1], df.columns[3]]]
-        items = coincidencias.to_dict(orient="records")
-        return render_template("seleccion.html", desc=desc, items=items, col_codigo=df.columns[1], col_desc=df.columns[3])
+
+    coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)][[df.columns[1], df.columns[3]]]
+    items = coincidencias.to_dict(orient="records")
+    return render_template("seleccion.html", desc=desc, items=items, col_codigo=df.columns[1], col_desc=df.columns[3])
 
 
 @app.route("/prestar/<codigo>", methods=["GET", "POST"])
