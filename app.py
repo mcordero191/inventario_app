@@ -190,8 +190,8 @@ def buscar():
             "Laboratorio": str(row["Laboratorio"]),
             "Estado": estado,
             "Prestado_a": prestado_a if prestado_a else "-",
-            "Fecha de préstamo": fecha_de_prestamo if fecha_de_prestamo else "-",
-            "Número de prestamos": num_prestamos,
+            "Fecha_préstamo": fecha_de_prestamo if fecha_de_prestamo else "-",
+            "Numero_prestamos": num_prestamos,
         })
 
     return render_template("seleccion.html", desc=desc, items=items)
