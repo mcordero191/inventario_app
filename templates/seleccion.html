@@ -79,6 +79,7 @@
           <th>DESCRIPCIÓN</th>
           <th>LABORATORIO</th>
           <th>ESTADO</th>
+          <th>N° PRÉSTAMOS</th>
         </tr>
       </thead>
       <tbody>
@@ -92,6 +93,7 @@
               {{ item.Estado }}
             </span>
           </td>
+          <td>{{ item.Numero_prestamos }}</td>
         </tr>
         {% endfor %}
       </tbody>
