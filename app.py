@@ -29,7 +29,7 @@ df = pd.read_excel(EXCEL_FILE, header=2, sheet_name=0)
 def init_db():
     """Crea la base de datos si no existe y la tabla de estados."""
     if not os.path.exists(DB_FILE):
-        print("🟢 Creando base de datos local:", DB_FILE)
+        print("Creando base de datos local:", DB_FILE)
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("""
@@ -82,17 +82,19 @@ def actualizar_estado(codigo, estado, prestado_a=None):
 
 
 def preparar_registro(record, codigo):
-    """Agrega estado y documento incrustado."""
-    if "Link" in record and pd.notna(record["Link"]):
-        link = str(record["Link"]).strip()
-        record["Enlace"] = Markup(f'<a href="{link}" target="_blank">{link}</a>')
-        if link.endswith(".pdf"):
-            record["Documento"] = Markup(f'<embed src="{link}" type="application/pdf" width="100%" height="600px">')
-        elif link.endswith((".png", ".jpg", ".jpeg")):
-            record["Documento"] = Markup(f'<img src="{link}" style="max-width:100%;">')
-        else:
-            record["Documento"] = Markup(f'<iframe src="{link}" width="100%" height="600px"></iframe>')
+    # """Agrega estado y documento incrustado."""
+    
+    # if "Link" in record and pd.notna(record["Link"]):
+    #     link = str(record["Link"]).strip()
+    #     record["Enlace"] = Markup(f'<a href="{link}" target="_blank">{link}</a>')
+    #     if link.endswith(".pdf"):
+    #         record["Documento"] = Markup(f'<embed src="{link}" type="application/pdf" width="100%" height="600px">')
+    #     elif link.endswith((".png", ".jpg", ".jpeg")):
+    #         record["Documento"] = Markup(f'<img src="{link}" style="max-width:100%;">')
+    #     else:
+    #         record["Documento"] = Markup(f'<iframe src="{link}" width="100%" height="600px"></iframe>')
     estado, prestado_a = get_estado(codigo)
+    record["Codigo"] = codigo  # ← campo uniforme para HTML
     record["Estado"] = estado
     record["Prestado_a"] = prestado_a if prestado_a else "-"
     return record
