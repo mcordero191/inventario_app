@@ -74,17 +74,17 @@
     <h1>ALMACÉN DE ELECTRICIDAD Y ELECTRÓNICA</h1>
   </header>
 
-  <h2>Datos técnicos del inventario</h2>
+  <h2>Búsqueda por:</h2>
 
   <form id="codeForm" method="get" action="/">
-    <label for="codigo">Buscar por código:</label><br>
+    <label for="codigo">Código:</label><br>
     <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-3ALMINS000037" autocomplete="off">
     <button type="submit">Buscar</button>
     <ul id="code-suggest" class="suggestions"></ul>
   </form>
 
   <form id="descForm" method="get" action="/buscar">
-    <label for="desc">Buscar por descripción:</label><br>
+    <label for="desc">Descripción:</label><br>
     <input type="text" id="desc" name="desc" placeholder="Ej. osciloscopio, fuente, multímetro" autocomplete="off">
     <button type="submit">Buscar</button>
     <ul id="desc-suggest" class="suggestions"></ul>
