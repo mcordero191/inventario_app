@@ -3,27 +3,34 @@ from markupsafe import Markup
 import pandas as pd
 import openpyxl
 import sqlite3
+import os
 from datetime import datetime
 
 app = Flask(__name__)
 
 # === CARGA DEL EXCEL ===
-df = pd.read_excel("INVENTARIO.xlsx", header=2, sheet_name=0)
+EXCEL_FILE = "INVENTARIO.xlsx"
+DB_FILE = "estado.db"
 
-wb = openpyxl.load_workbook("INVENTARIO.xlsx", data_only=True)
+df = pd.read_excel(EXCEL_FILE, header=2, sheet_name=0)
+
+wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
 ws = wb.active
-# if "Link" in df.columns:
-#     col_idx = list(df.columns).index("Link") + 1
-#     links = []
-#     for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
-#         cell = row[0]
-#         links.append(cell.hyperlink.target if cell.hyperlink else None)
-#     df["Link"] = links[:len(df)]
+if "Link" in df.columns:
+    col_idx = list(df.columns).index("Link") + 1
+    links = []
+    for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
+        cell = row[0]
+        links.append(cell.hyperlink.target if cell.hyperlink else None)
+    df["Link"] = links[:len(df)]
 
 
-# === BASE DE DATOS LOCAL (estado de préstamos) ===
+# === FUNCIÓN DE INICIALIZACIÓN DE BASE DE DATOS ===
 def init_db():
-    conn = sqlite3.connect("estado.db")
+    """Crea la base de datos si no existe y la tabla de estados."""
+    if not os.path.exists(DB_FILE):
+        print("🟢 Creando base de datos local:", DB_FILE)
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS inventario_estado (
@@ -39,13 +46,14 @@ def init_db():
 init_db()
 
 
+# === FUNCIONES AUXILIARES ===
 def get_estado(codigo):
-    conn = sqlite3.connect("estado.db")
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT estado, prestado_a FROM inventario_estado WHERE codigo = ?", (codigo,))
     row = c.fetchone()
     if not row:
-        # Si no existe, crearlo como disponible
+        # si no existe, crearlo automáticamente como disponible
         c.execute("INSERT INTO inventario_estado (codigo, estado) VALUES (?, 'Disponible')", (codigo,))
         conn.commit()
         conn.close()
@@ -55,23 +63,26 @@ def get_estado(codigo):
 
 
 def actualizar_estado(codigo, estado, prestado_a=None):
-    conn = sqlite3.connect("estado.db")
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     if estado == "Prestado":
         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        c.execute("REPLACE INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo) VALUES (?, ?, ?, ?)",
-                  (codigo, estado, prestado_a, fecha))
+        c.execute("""
+            REPLACE INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo)
+            VALUES (?, ?, ?, ?)
+        """, (codigo, estado, prestado_a, fecha))
     else:
-        c.execute("UPDATE inventario_estado SET estado='Disponible', prestado_a=NULL, fecha_prestamo=NULL WHERE codigo=?", (codigo,))
+        c.execute("""
+            UPDATE inventario_estado
+            SET estado='Disponible', prestado_a=NULL, fecha_prestamo=NULL
+            WHERE codigo=?
+        """, (codigo,))
     conn.commit()
     conn.close()
 
 
-# === FUNCIONES AUXILIARES ===
-from markupsafe import Markup
-
 def preparar_registro(record, codigo):
-    """Agrega documento incrustado, enlace y estado."""
+    """Agrega estado y documento incrustado."""
     if "Link" in record and pd.notna(record["Link"]):
         link = str(record["Link"]).strip()
         record["Enlace"] = Markup(f'<a href="{link}" target="_blank">{link}</a>')
@@ -81,7 +92,6 @@ def preparar_registro(record, codigo):
             record["Documento"] = Markup(f'<img src="{link}" style="max-width:100%;">')
         else:
             record["Documento"] = Markup(f'<iframe src="{link}" width="100%" height="600px"></iframe>')
-
     estado, prestado_a = get_estado(codigo)
     record["Estado"] = estado
     record["Prestado_a"] = prestado_a if prestado_a else "-"
@@ -89,7 +99,6 @@ def preparar_registro(record, codigo):
 
 
 def buscar_codigo(codigo):
-    """Busca por código (columna 2)."""
     row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
     if not row.empty:
         return preparar_registro(row.to_dict(orient="records")[0], codigo)
@@ -135,7 +144,6 @@ def buscar():
 
 @app.route("/prestar/<codigo>", methods=["GET", "POST"])
 def prestar(codigo):
-    """Formulario para registrar préstamo."""
     if request.method == "POST":
         alumno = request.form.get("alumno").strip()
         actualizar_estado(codigo, "Prestado", alumno)
@@ -145,7 +153,6 @@ def prestar(codigo):
 
 @app.route("/devolver/<codigo>", methods=["GET", "POST"])
 def devolver(codigo):
-    """Confirmar devolución."""
     if request.method == "POST":
         actualizar_estado(codigo, "Disponible")
         return redirect(f"/{codigo}")
