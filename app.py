@@ -2,13 +2,14 @@ from flask import Flask, render_template, request, redirect, url_for
 from markupsafe import Markup
 import pandas as pd
 import openpyxl
+import sqlite3
+from datetime import datetime
 
 app = Flask(__name__)
 
 # === CARGA DEL EXCEL ===
 df = pd.read_excel("INVENTARIO.xlsx", header=2, sheet_name=0)
 
-# Leer hipervínculos reales de la columna "Link"
 wb = openpyxl.load_workbook("INVENTARIO.xlsx", data_only=True)
 ws = wb.active
 if "Link" in df.columns:
@@ -20,20 +21,70 @@ if "Link" in df.columns:
     df["Link"] = links[:len(df)]
 
 
-# === FUNCIONES ===
-def preparar_registro(record):
-    """Agrega documento incrustado y enlace si existe."""
+# === BASE DE DATOS LOCAL (estado de préstamos) ===
+def init_db():
+    conn = sqlite3.connect("estado.db")
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS inventario_estado (
+            codigo TEXT PRIMARY KEY,
+            estado TEXT DEFAULT 'Disponible',
+            prestado_a TEXT,
+            fecha_prestamo TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+
+def get_estado(codigo):
+    conn = sqlite3.connect("estado.db")
+    c = conn.cursor()
+    c.execute("SELECT estado, prestado_a FROM inventario_estado WHERE codigo = ?", (codigo,))
+    row = c.fetchone()
+    if not row:
+        # Si no existe, crearlo como disponible
+        c.execute("INSERT INTO inventario_estado (codigo, estado) VALUES (?, 'Disponible')", (codigo,))
+        conn.commit()
+        conn.close()
+        return "Disponible", None
+    conn.close()
+    return row[0], row[1]
+
+
+def actualizar_estado(codigo, estado, prestado_a=None):
+    conn = sqlite3.connect("estado.db")
+    c = conn.cursor()
+    if estado == "Prestado":
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("REPLACE INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo) VALUES (?, ?, ?, ?)",
+                  (codigo, estado, prestado_a, fecha))
+    else:
+        c.execute("UPDATE inventario_estado SET estado='Disponible', prestado_a=NULL, fecha_prestamo=NULL WHERE codigo=?", (codigo,))
+    conn.commit()
+    conn.close()
+
+
+# === FUNCIONES AUXILIARES ===
+from markupsafe import Markup
+
+def preparar_registro(record, codigo):
+    """Agrega documento incrustado, enlace y estado."""
     if "Link" in record and pd.notna(record["Link"]):
         link = str(record["Link"]).strip()
         record["Enlace"] = Markup(f'<a href="{link}" target="_blank">{link}</a>')
-        if link.endswith("/"):
-            record["Documento"] = Markup(f'<iframe src="{link}" width="100%" height="600px"></iframe>')
-        elif link.endswith(".pdf"):
+        if link.endswith(".pdf"):
             record["Documento"] = Markup(f'<embed src="{link}" type="application/pdf" width="100%" height="600px">')
         elif link.endswith((".png", ".jpg", ".jpeg")):
             record["Documento"] = Markup(f'<img src="{link}" style="max-width:100%;">')
         else:
             record["Documento"] = Markup(f'<iframe src="{link}" width="100%" height="600px"></iframe>')
+
+    estado, prestado_a = get_estado(codigo)
+    record["Estado"] = estado
+    record["Prestado_a"] = prestado_a if prestado_a else "-"
     return record
 
 
@@ -41,84 +92,64 @@ def buscar_codigo(codigo):
     """Busca por código (columna 2)."""
     row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
     if not row.empty:
-        return preparar_registro(row.to_dict(orient="records")[0])
+        return preparar_registro(row.to_dict(orient="records")[0], codigo)
     return None
 
 
 def buscar_codigo_por_descripcion(desc):
-    """Busca códigos que coincidan con la descripción (columna 4)."""
     desc = desc.lower().strip()
     matches = df[df.iloc[:, 3].astype(str).str.lower().str.contains(desc, na=False)]
-    codigos = matches.iloc[:, 1].dropna().astype(str).unique().tolist()
-    return codigos
+    return matches.iloc[:, 1].dropna().astype(str).unique().tolist()
 
 
-def resumen_general():
-    """Resumen de conteo de elementos."""
-    total = len(df)
-    sin_codigo = df[df.iloc[:, 1].isna()].shape[0]
-    con_codigo = total - sin_codigo
-    con_codigo_link = df[(~df.iloc[:, 1].isna()) & (df["Link"].notna())].shape[0]
-    return dict(total=total, sin_codigo=sin_codigo, con_codigo=con_codigo, con_codigo_link=con_codigo_link)
-
-
-# === RUTAS PRINCIPALES ===
-@app.route("/", methods=["GET"])
-@app.route("/<codigo>", methods=["GET"])
+# === RUTAS ===
+@app.route("/")
+@app.route("/<codigo>")
 def index(codigo=None):
-    """Vista principal: búsqueda por código."""
     result = None
-    stats = resumen_general()
     codigos = sorted(df.iloc[:, 1].dropna().astype(str).unique())
     descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())
 
     if codigo:
         result = buscar_codigo(codigo)
         if not result:
-            result = {
-                "no_agregado": True,
-                "mensaje": f"El código «{codigo}» no ha sido registrado o agregado al inventario."
-            }
+            result = {"no_agregado": True, "mensaje": f"El código «{codigo}» no ha sido registrado o agregado al inventario."}
 
-    return render_template("index.html", result=result, stats=stats,
-                           codigos=codigos, descripciones=descripciones)
+    return render_template("index.html", result=result, codigos=codigos, descripciones=descripciones)
 
 
-@app.route("/buscar", methods=["GET"])
+@app.route("/buscar")
 def buscar():
-    """Procesa la búsqueda por descripción y redirige o muestra resultados múltiples."""
     desc = request.args.get("desc", "").strip()
-    if not desc:
-        return redirect(url_for("index"))
-
     codigos = buscar_codigo_por_descripcion(desc)
-
-    # Caso: sin ningún código asociado
     if len(codigos) == 0:
-        mensaje = f"No existe ningún item que coincida con la descripción «{desc}»."
+        mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
         return render_template("seleccion.html", mensaje=mensaje)
-
-    # Caso: un solo código → redirigir directamente
     elif len(codigos) == 1:
-        codigo = codigos[0].strip()
-        if codigo == "" or codigo.lower() in ["nan", "none"]:
-            mensaje = f"El item con descripción «{desc}» todavía no tiene un código asociado."
-            return render_template("seleccion.html", mensaje=mensaje)
-        else:
-            return redirect(f"/{codigo}")
-
-    # Caso: múltiples coincidencias → mostrar tabla de código + descripción
+        return redirect(f"/{codigos[0]}")
     else:
-        codigos_validos = [c for c in codigos if str(c).strip() not in ["", "nan", "none"]]
-        if not codigos_validos:
-            mensaje = f"Los items con descripción «{desc}» todavía no tienen un código asociado."
-            return render_template("seleccion.html", mensaje=mensaje)
-
-        coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos_validos)][[df.columns[1], df.columns[3]]]
+        coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)][[df.columns[1], df.columns[3]]]
         items = coincidencias.to_dict(orient="records")
+        return render_template("seleccion.html", desc=desc, items=items, col_codigo=df.columns[1], col_desc=df.columns[3])
 
-        return render_template("seleccion.html", desc=desc, items=items,
-                               col_codigo=df.columns[1], col_desc=df.columns[3])
+
+@app.route("/prestar/<codigo>", methods=["GET", "POST"])
+def prestar(codigo):
+    """Formulario para registrar préstamo."""
+    if request.method == "POST":
+        alumno = request.form.get("alumno").strip()
+        actualizar_estado(codigo, "Prestado", alumno)
+        return redirect(f"/{codigo}")
+    return render_template("prestar.html", codigo=codigo)
+
+
+@app.route("/devolver/<codigo>", methods=["GET", "POST"])
+def devolver(codigo):
+    """Confirmar devolución."""
+    if request.method == "POST":
+        actualizar_estado(codigo, "Disponible")
+        return redirect(f"/{codigo}")
+    return render_template("devolver.html", codigo=codigo)
 
 
 if __name__ == "__main__":
