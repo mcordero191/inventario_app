@@ -147,7 +147,7 @@ def buscar():
         return redirect(f"/{codigos[0]}")
 
     # Obtener código, descripción y estado actual
-    coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)][[df.columns[1], df.columns[3]]]
+    coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)]#[[df.columns[1], df.columns[3]]]
     # coincidencias = coincidencias.rename(columns={df.columns[1]: "Codigo", df.columns[3]: "Descripcion"})
 
     items = []
@@ -156,10 +156,11 @@ def buscar():
         estado, prestado_a, fecha_de_prestamo = get_estado(codigo)
         items.append({
             "Código": codigo,
-            "Descripción": row["Descripcion"],
+            "Descripción": str(row["Descripcion"]),
+            "Laboratorio": str(row["Laboratorio"]),
             "Estado": estado,
             "Prestado_a": prestado_a if prestado_a else "-",
-            "Fecha de préstamo": fecha_de_prestamo,
+            "Fecha de préstamo": fecha_de_prestamo if fecha_de_prestamo else "-",,
         })
 
     return render_template("seleccion.html", desc=desc, items=items)
