@@ -77,6 +77,7 @@
         <tr>
           <th>CÓDIGO</th>
           <th>DESCRIPCIÓN</th>
+          <th>LABORATORIO</th>
           <th>ESTADO</th>
         </tr>
       </thead>
@@ -85,6 +86,7 @@
         <tr onclick="window.location.href='/' + encodeURIComponent('{{ item.Código }}')" style="cursor:pointer;">
           <td>{{ item.Código }}</td>
           <td>{{ item.Descripción }}</td>
+          <td>{{ item.Laboratorio }}</td>
           <td>
             <span class="estado {{ 'disponible' if item.Estado == 'Disponible' else 'prestado' }}">
               {{ item.Estado }}
