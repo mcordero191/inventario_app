@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Confirmar devolución</title>
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #F9FAFB;
+    color: #333;
+    margin: 0;
+    padding: 40px;
+  }
+  header { display: flex; align-items: center; margin-bottom: 30px; }
+  header img { height: 60px; margin-right: 20px; }
+  h1 { color: #002C77; margin: 0; }
+  form {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    width: 400px;
+  }
+  p { font-size: 1.1em; margin-bottom: 20px; }
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .confirm-btn {
+    background: #0072CE;
+    color: white;
+  }
+  .confirm-btn:hover { background: #005BB5; }
+  .cancel-btn {
+    background: #ccc;
+    color: #333;
+    margin-left: 10px;
+  }
+  .cancel-btn:hover { background: #aaa; }
+</style>
+</head>
+<body>
+  <header>
+    <img src="https://red.pucp.edu.pe/riel/files/2019/07/LOGO-DE-PUCP.jpg" alt="PUCP">
+    <h1>Confirmar devolución</h1>
+  </header>
+
+  <form method="POST">
+    <p>¿Confirmas la devolución del artículo con código <strong>{{ codigo }}</strong>?</p>
+
+    <button type="submit" class="confirm-btn">Confirmar devolución</button>
+    <button type="button" class="cancel-btn" onclick="window.location.href='/{{ codigo }}'">Cancelar</button>
+  </form>
+</body>
+</html>
