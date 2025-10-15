@@ -24,12 +24,41 @@
   }
   h1 { color: #002C77; margin: 0; }
   h2 { color: #444; margin-top: 0; }
+
+  /* --- Layout principal --- */
+  .layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+  }
+  .left-panel {
+    flex: 0 0 320px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .right-panel {
+    flex: 1;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    min-height: 300px;
+  }
+  @media (max-width: 768px) {
+    .layout { flex-direction: column; }
+    .left-panel, .right-panel { width: 100%; }
+  }
+
+  /* --- Formularios --- */
   form { margin-bottom: 20px; position: relative; }
   input[type="text"] {
     padding: 8px;
-    width: 280px;
+    width: 100%;
     border-radius: 4px;
     border: 1px solid #ccc;
+    margin-top: 5px;
   }
   button {
     padding: 8px 16px;
@@ -38,8 +67,11 @@
     cursor: pointer;
     color: white;
     background: #0072CE;
+    margin-top: 8px;
   }
   button:hover { background: #005BB5; }
+
+  /* --- Sugerencias --- */
   .suggestions {
     display: none;
     position: absolute;
@@ -49,23 +81,35 @@
     list-style: none;
     margin-top: 4px;
     padding-left: 0;
-    width: 280px;
+    width: 100%;
     z-index: 1000;
   }
   .suggestions li { padding: 8px; cursor: pointer; }
   .suggestions li:hover { background: #E9ECF5; }
+
+  /* --- Tabla de resultados --- */
   table {
     border-collapse: collapse;
     background: white;
     border-radius: 6px;
     box-shadow: 0 1px 6px rgba(0,0,0,0.1);
-    width: 600px;
+    width: 100%;
   }
   th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
   th { background: #E9ECF5; text-transform: uppercase; }
   .estado { font-weight: bold; }
-  .disponible { color: green; }
-  .prestado { color: #B00020; }
+  .disponible {
+    color: white;
+    background: green;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .prestado {
+    color: white;
+    background: #B00020;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
 </style>
 </head>
 <body>
@@ -74,103 +118,115 @@
     <h1>ALMACÉN DE ELECTRICIDAD Y ELECTRÓNICA</h1>
   </header>
 
-  <h2>Búsqueda por:</h2>
+  <div class="layout">
+    <!-- PANEL IZQUIERDO -->
+    <div class="left-panel">
+      <h2>Buscar artículo</h2>
 
-  <form id="codeForm" method="get" action="/">
-    <label for="codigo">Código:</label><br>
-    <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-3ALMINS000037" autocomplete="off">
-    <button type="submit">Buscar</button>
-    <ul id="code-suggest" class="suggestions"></ul>
-  </form>
+      <form id="codeForm" method="get" action="/">
+        <label for="codigo">Por código:</label>
+        <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-3ALMINS000037" autocomplete="off">
+        <button type="submit">Buscar</button>
+        <ul id="code-suggest" class="suggestions"></ul>
+      </form>
 
-  <form id="descForm" method="get" action="/buscar">
-    <label for="desc">Descripción:</label><br>
-    <input type="text" id="desc" name="desc" placeholder="Ej. osciloscopio, fuente, multímetro" autocomplete="off">
-    <button type="submit">Buscar</button>
-    <ul id="desc-suggest" class="suggestions"></ul>
-  </form>
+      <form id="descForm" method="get" action="/buscar">
+        <label for="desc">Por descripción:</label>
+        <input type="text" id="desc" name="desc" placeholder="Ej. osciloscopio, fuente, multímetro" autocomplete="off">
+        <button type="submit">Buscar</button>
+        <ul id="desc-suggest" class="suggestions"></ul>
+      </form>
+    </div>
 
-  {% if result %}
-    {% if result.no_agregado %}
-      <div style="background:#FFE5E5; color:#B00020; padding:15px; border-radius:6px; width:fit-content;">
-        <strong>{{ result.mensaje }}</strong>
-      </div>
-      <button onclick="window.location.href='/'" style="margin-top:15px;">← Regresar al inicio</button>
-    {% else %}
-      <h3>Detalles del artículo</h3>
-      <table>
-        {% for key, value in result.items() %}
-          {% if key not in ['Link', 'Documento', 'no_agregado', 'mensaje'] %}
-            <tr>
-              <th>{{ key.upper() }}</th>
-              <td>
-                {% if key == 'Estado' %}
-                  <span class="estado {{ 'disponible' if value == 'Disponible' else 'prestado' }}">{{ value }}</span>
-                {% else %}
-                  {{ value if value not in [None, 'nan', 'NaN'] else '-' }}
-                {% endif %}
-              </td>
-            </tr>
+    <!-- PANEL DERECHO -->
+    <div class="right-panel">
+      {% if result %}
+        {% if result.no_agregado %}
+          <div style="background:#FFE5E5; color:#B00020; padding:15px; border-radius:6px; width:fit-content;">
+            <strong>{{ result.mensaje }}</strong>
+          </div>
+          <button onclick="window.location.href='/'" style="margin-top:15px;">← Regresar</button>
+        {% else %}
+          <h2>Detalles del artículo</h2>
+          <table>
+            {% for key, value in result.items() %}
+              {% if key not in ['Link', 'Documento', 'no_agregado', 'mensaje'] %}
+                <tr>
+                  <th>{{ key.upper() }}</th>
+                  <td>
+                    {% if key == 'Estado' %}
+                      <span class="estado {{ 'disponible' if value == 'Disponible' else 'prestado' }}">{{ value }}</span>
+                    {% else %}
+                      {{ value if value not in [None, 'nan', 'NaN'] else '-' }}
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </table>
+
+          {% if result.Estado == 'Disponible' %}
+            <form action="/prestar/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
+              <button>Prestar</button>
+            </form>
+          {% elif result.Estado == 'Prestado' %}
+            <p><strong>Prestado a:</strong> {{ result.Prestado_a }}</p>
+            <form action="/devolver/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
+              <button>Devolver</button>
+            </form>
           {% endif %}
-        {% endfor %}
-      </table>
 
-      {% if result.Estado == 'Disponible' %}
-        <form action="/prestar/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
-          <button>Prestar</button>
-        </form>
-      {% elif result.Estado == 'Prestado' %}
-        <form action="/devolver/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
-          <button>Devolver</button>
-        </form>
+          {% if result.Documento %}
+            <div style="margin-top:25px;">
+              <h3>Documento asociado</h3>
+              {{ result.Documento|safe }}
+            </div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <p>Ingrese un código o descripción para buscar un artículo.</p>
       {% endif %}
+    </div>
+  </div>
 
-      {% if result.Documento %}
-        <div style="margin-top:25px;">
-          <h3>Documento asociado</h3>
-          {{ result.Documento|safe }}
-        </div>
-      {% endif %}
-    {% endif %}
-  {% endif %}
+  <!-- === Autocompletado === -->
+  <script>
+    function setupAutocomplete(inputId, listId, kind, onPick) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+      let lastController = null;
 
-<script>
-  function setupAutocomplete(inputId, listId, kind, onPick) {
-    const input = document.getElementById(inputId);
-    const list = document.getElementById(listId);
-    let lastController = null;
+      input.addEventListener('input', async () => {
+        const q = input.value.trim();
+        if (q.length < 1) { list.style.display = 'none'; list.innerHTML=''; return; }
 
-    input.addEventListener('input', async () => {
-      const q = input.value.trim();
-      if (q.length < 1) { list.style.display = 'none'; list.innerHTML=''; return; }
+        try {
+          if (lastController) lastController.abort();
+          lastController = new AbortController();
+          const res = await fetch(`/autocomplete?q=${encodeURIComponent(q)}&kind=${encodeURIComponent(kind)}`, { signal: lastController.signal });
+          const data = await res.json();
+          if (!Array.isArray(data) || data.length === 0) { list.style.display = 'none'; return; }
+          list.innerHTML = data.map(v => `<li data-v="${v.replace(/"/g,'&quot;')}">${v}</li>`).join('');
+          list.style.display = 'block';
+        } catch {}
+      });
 
-      try {
-        if (lastController) lastController.abort();
-        lastController = new AbortController();
-        const res = await fetch(`/autocomplete?q=${encodeURIComponent(q)}&kind=${encodeURIComponent(kind)}`, { signal: lastController.signal });
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) { list.style.display = 'none'; return; }
-        list.innerHTML = data.map(v => `<li data-v="${v.replace(/"/g,'&quot;')}">${v}</li>`).join('');
-        list.style.display = 'block';
-      } catch {}
-    });
+      list.addEventListener('click', e => {
+        if (e.target.tagName === 'LI') {
+          const val = e.target.getAttribute('data-v');
+          input.value = val;
+          list.style.display = 'none';
+          onPick(val);
+        }
+      });
 
-    list.addEventListener('click', e => {
-      if (e.target.tagName === 'LI') {
-        const val = e.target.getAttribute('data-v');
-        input.value = val;
-        list.style.display = 'none';
-        onPick(val);
-      }
-    });
+      document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
+      });
+    }
 
-    document.addEventListener('click', e => {
-      if (!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
-    });
-  }
-
-  setupAutocomplete('codigo', 'code-suggest', 'code', val => window.location.href = '/' + encodeURIComponent(val.trim()));
-  setupAutocomplete('desc', 'desc-suggest', 'desc', val => window.location.href = '/buscar?desc=' + encodeURIComponent(val.trim()));
-</script>
+    setupAutocomplete('codigo', 'code-suggest', 'code', val => window.location.href = '/' + encodeURIComponent(val.trim()));
+    setupAutocomplete('desc', 'desc-suggest', 'desc', val => window.location.href = '/buscar?desc=' + encodeURIComponent(val.trim()));
+  </script>
 </body>
 </html>
