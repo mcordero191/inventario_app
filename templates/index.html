@@ -83,22 +83,14 @@
 
   <form method="get" action="/">
     <label for="codigo">Buscar por código:</label>
-    <select name="codigo" id="codigo" onchange="this.form.submit()">
-      <option value="">-- Selecciona un código --</option>
-      {% for c in codigos %}
-        <option value="{{ c }}">{{ c }}</option>
-      {% endfor %}
-    </select>
+    <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-3ALMINS000037">
+    <button type="submit">Buscar</button>
   </form>
-
+  
   <form method="get" action="/buscar">
     <label for="desc">Buscar por descripción:</label>
-    <select name="desc" id="desc" onchange="this.form.submit()">
-      <option value="">-- Selecciona descripción --</option>
-      {% for d in descripciones %}
-        <option value="{{ d }}">{{ d }}</option>
-      {% endfor %}
-    </select>
+    <input type="text" id="desc" name="desc" placeholder="Ej. osciloscopio, fuente, multímetro">
+    <button type="submit">Buscar</button>
   </form>
 
   {% if result %}
