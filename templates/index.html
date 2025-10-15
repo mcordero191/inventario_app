@@ -129,11 +129,11 @@
         </table>
 
         {% if result.Estado == 'Disponible' %}
-          <form action="/prestar/{{ result['Código'] }}" method="get" style="margin-top:15px;">
+          <form action="/prestar/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
             <button>Prestar</button>
           </form>
         {% elif result.Estado == 'Prestado' %}
-          <form action="/devolver/{{ result['Código'] }}" method="get" style="margin-top:15px;">
+          <form action="/devolver/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
             <button>Devolver</button>
           </form>
         {% endif %}
