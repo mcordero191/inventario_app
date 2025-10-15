@@ -153,12 +153,13 @@ def buscar():
     items = []
     for _, row in coincidencias.iterrows():
         codigo = str(row["Codigo"])
-        estado, prestado_a = get_estado(codigo)
+        estado, prestado_a, fecha_de_prestamo = get_estado(codigo)
         items.append({
             "Código": codigo,
             "Descripción": row["Descripcion"],
             "Estado": estado,
-            "Prestado_a": prestado_a if prestado_a else "-"
+            "Prestado_a": prestado_a if prestado_a else "-",
+            "Fecha de préstamo": fecha_de_prestamo,
         })
 
     return render_template("seleccion.html", desc=desc, items=items)
