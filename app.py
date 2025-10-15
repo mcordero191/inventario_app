@@ -39,15 +39,15 @@ init_db()
 def get_estado(codigo):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT estado, prestado_a FROM inventario_estado WHERE codigo = ?", (codigo,))
+    c.execute("SELECT estado, prestado_a, fecha_prestamo FROM inventario_estado WHERE codigo = ?", (codigo,))
     row = c.fetchone()
     if not row:
         c.execute("INSERT INTO inventario_estado (codigo, estado) VALUES (?, 'Disponible')", (codigo,))
         conn.commit()
         conn.close()
-        return "Disponible", None
+        return "Disponible", None, None
     conn.close()
-    return row[0], row[1]
+    return row[0], row[1], row[2]
 
 
 def actualizar_estado(codigo, estado, prestado_a=None):
@@ -72,9 +72,10 @@ def actualizar_estado(codigo, estado, prestado_a=None):
 def preparar_registro(record, codigo):
     """Agrega estado, enlace y documento incrustado."""
     record["Codigo"] = codigo  # campo uniforme para HTML
-    estado, prestado_a = get_estado(codigo)
+    estado, prestado_a, fecha_prestamo = get_estado(codigo)
     record["Estado"] = estado
     record["Prestado_a"] = prestado_a if prestado_a else "-"
+    record["Fecha de préstamo"] = fecha_prestamo
     return record
 
 
@@ -169,7 +170,8 @@ def prestar(codigo):
         alumno = request.form.get("alumno").strip()
         actualizar_estado(codigo, "Prestado", alumno)
         return redirect(f"/{codigo}")
-    return render_template("prestar.html", codigo=codigo)
+    row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
+    return render_template("prestar.html", codigo=codigo, desc=row["Descripción"])
 
 
 @app.route("/devolver/<codigo>", methods=["GET", "POST"])
@@ -177,7 +179,8 @@ def devolver(codigo):
     if request.method == "POST":
         actualizar_estado(codigo, "Disponible")
         return redirect(f"/{codigo}")
-    return render_template("devolver.html", codigo=codigo)
+    row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
+    return render_template("devolver.html", codigo=codigo, desc=row["Descripción"])
 
 
 if __name__ == "__main__":
