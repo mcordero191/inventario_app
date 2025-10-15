@@ -48,7 +48,9 @@
   </header>
 
   <form method="POST">
-    <p>¿Confirmas la devolución del artículo con código <strong>{{ codigo }}</strong>?</p>
+    <p>¿Confirmas la devolución del artículo?:</p>
+    <p><strong>Código del artículo:</strong> {{ desc }}</p>
+    <p><strong>Descripción del artículo:</strong> {{ desc }}</p>
 
     <button type="submit" class="confirm-btn">Confirmar devolución</button>
     <button type="button" class="cancel-btn" onclick="window.location.href='/{{ codigo }}'">Cancelar</button>
