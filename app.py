@@ -172,17 +172,35 @@ def prestar(codigo):
         alumno = request.form.get("alumno").strip()
         actualizar_estado(codigo, "Prestado", alumno)
         return redirect(f"/{codigo}")
-    row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()].dropna()
-    return render_template("prestar.html", codigo=codigo, desc=row["Descripcion"].astype(str))
+
+    # Buscar descripción (columna 4)
+    mask = df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()
+    filtered = df.loc[mask, df.columns[3]]
+
+    if filtered.empty:
+        desc = "(Descripción no encontrada)"
+    else:
+        desc = str(filtered.values[0])
+        
+    return render_template("prestar.html", codigo=codigo, desc=desc)
 
 
 @app.route("/devolver/<codigo>", methods=["GET", "POST"])
 def devolver(codigo):
     if request.method == "POST":
         actualizar_estado(codigo, "Disponible")
-        return redirect(f"/{codigo}")
-    row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()].dropna()
-    return render_template("devolver.html", codigo=codigo, desc=row["Descripcion"].astype(str))
+        return redirect(f"/{codigo}")\
+        
+    # Buscar descripción (columna 4)
+    mask = df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()
+    filtered = df.loc[mask, df.columns[3]]
+
+    if filtered.empty:
+        desc = "(Descripción no encontrada)"
+    else:
+        desc = str(filtered.values[0])
+        
+    return render_template("devolver.html", codigo=codigo, desc=desc)
 
 
 if __name__ == "__main__":
