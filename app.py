@@ -12,13 +12,13 @@ df = pd.read_excel("INVENTARIO.xlsx", header=2, sheet_name=0)
 
 wb = openpyxl.load_workbook("INVENTARIO.xlsx", data_only=True)
 ws = wb.active
-if "Link" in df.columns:
-    col_idx = list(df.columns).index("Link") + 1
-    links = []
-    for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
-        cell = row[0]
-        links.append(cell.hyperlink.target if cell.hyperlink else None)
-    df["Link"] = links[:len(df)]
+# if "Link" in df.columns:
+#     col_idx = list(df.columns).index("Link") + 1
+#     links = []
+#     for row in ws.iter_rows(min_row=4, min_col=col_idx, max_col=col_idx):
+#         cell = row[0]
+#         links.append(cell.hyperlink.target if cell.hyperlink else None)
+#     df["Link"] = links[:len(df)]
 
 
 # === BASE DE DATOS LOCAL (estado de préstamos) ===
