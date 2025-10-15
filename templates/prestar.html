@@ -19,7 +19,7 @@
     border-radius: 8px;
     padding: 30px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    width: 400px;
+    width: 600px;
   }
   label { display: block; margin-bottom: 8px; font-weight: bold; }
   input[type="text"] {
@@ -53,8 +53,8 @@
   </header>
 
   <form method="POST">
-    <p><strong>Código del artículo:</strong> {{ codigo }}</p>
-    <p><strong>Descripción del artículo:</strong> {{ desc }}</p>
+    <p><strong>Código:</strong> {{ codigo }}</p>
+    <p><strong>Descripción:</strong> {{ desc }}</p>
 
     <label for="alumno">Nombre o código del alumno:</label>
     <input type="text" id="alumno" name="alumno" placeholder="Ej. Juan Pérez o 20204567" required>
