@@ -1,25 +1,74 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory, abort
 from markupsafe import Markup
 import pandas as pd
-import openpyxl
 import sqlite3
 import os
+import unicodedata
 from datetime import datetime
 
 app = Flask(__name__)
 
-EXCEL_FILE = "INVENTARIO.xlsx"
+# === Paths & files ===
+EXCEL_FILE = "INVENTARIO2025.xlsx"     # <-- your new Excel file
 DB_FILE = "estado.db"
+FOTOS_DIR = "Fotos"                    # folder at project root
 
-# === CARGA DEL EXCEL ===
-df = pd.read_excel(EXCEL_FILE, header=2, sheet_name=0)
+# === Helpers ===
+def strip_accents(s: str) -> str:
+    if s is None:
+        return ""
+    return "".join(c for c in unicodedata.normalize("NFD", str(s)) if unicodedata.category(c) != "Mn")
 
-# === BASE DE DATOS LOCAL ===
+def norm_col(s: str) -> str:
+    s = strip_accents(s).lower().strip()
+    out = []
+    prev_us = False
+    for ch in s:
+        if ch.isalnum():
+            out.append(ch)
+            prev_us = False
+        else:
+            if not prev_us:
+                out.append("_")
+                prev_us = True
+    return "".join(out).strip("_")
+
+def choose_col(df, candidates):
+    norm_map = {norm_col(c): c for c in df.columns}
+    for cand in candidates:
+        k = norm_col(cand)
+        if k in norm_map:
+            return norm_map[k]
+    return None
+
+def build_foto_path(codigo: str):
+    if not codigo or len(codigo) < 6:
+        return None
+    stand = codigo[0]
+    xdd = codigo[:4]
+    xddi = codigo[:6]
+    base = os.path.join(FOTOS_DIR, f"STAND {stand}", xdd, xddi)
+    for ext in (".jpg", ".jpeg", ".png", ".webp"):
+        full = os.path.join(base, f"{codigo}{ext}")
+        if os.path.isfile(full):
+            rel = os.path.relpath(full, FOTOS_DIR)
+            return rel.replace("\\", "/")
+    return None
+
+# === Load Excel (header at row 3) ===
+df_raw = pd.read_excel(EXCEL_FILE, header=2, dtype=str)
+df_raw.columns = [str(c).strip().lower() for c in df_raw.columns]
+df = df_raw.copy()
+
+COL_CODIGO   = choose_col(df, ["codigo", "código"])
+COL_DESC     = choose_col(df, ["descripcion", "descripción"])
+COL_SERIE    = choose_col(df, ["serie", "nro_serie"])
+COL_ACTFIJO  = choose_col(df, ["act fijo", "activo fijo", "act_fijo"])
+
+# === SQLite for variable fields ===
 def init_db():
-    """Crea la base si no existe o agrega el campo num_prestamos si falta."""
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    # Crear tabla si no existe
     c.execute("""
         CREATE TABLE IF NOT EXISTS inventario_estado (
             codigo TEXT PRIMARY KEY,
@@ -29,210 +78,165 @@ def init_db():
             num_prestamos INTEGER DEFAULT 0
         )
     """)
-    # Verificar si el campo num_prestamos ya existe
-    c.execute("PRAGMA table_info(inventario_estado)")
-    columnas = [col[1] for col in c.fetchall()]
-    if "num_prestamos" not in columnas:
-        c.execute("ALTER TABLE inventario_estado ADD COLUMN num_prestamos INTEGER DEFAULT 0")
     conn.commit()
     conn.close()
-
 init_db()
 
-
-# === FUNCIONES AUXILIARES ===
 def get_estado(codigo):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT estado, prestado_a, fecha_prestamo, num_prestamos FROM inventario_estado WHERE codigo = ?", (codigo,))
+    c.execute("SELECT estado, prestado_a, fecha_prestamo, num_prestamos FROM inventario_estado WHERE codigo=?", (codigo,))
     row = c.fetchone()
-    if not row:
-        c.execute("INSERT INTO inventario_estado (codigo, estado, num_prestamos) VALUES (?, 'Disponible', 0)", (codigo,))
-        conn.commit()
-        conn.close()
-        return "Disponible", None, None, None
     conn.close()
-    return row[0], row[1], row[2], row[3]
-
-
-# def actualizar_estado(codigo, estado, prestado_a=None):
-#     conn = sqlite3.connect(DB_FILE)
-#     c = conn.cursor()
-#     if estado == "Prestado":
-#         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#         c.execute("""
-#             REPLACE INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo)
-#             VALUES (?, ?, ?, ?)
-#         """, (codigo, estado, prestado_a, fecha))
-#     else:
-#         c.execute("""
-#             UPDATE inventario_estado
-#             SET estado='Disponible', prestado_a=NULL, fecha_prestamo=NULL
-#             WHERE codigo=?
-#         """, (codigo,))
-#     conn.commit()
-#     conn.close()
+    if not row:
+        return ("Disponible", None, None, 0)
+    return row
 
 def actualizar_estado(codigo, estado, prestado_a=None):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     if estado == "Prestado":
-        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # Aumentar el número de préstamos
-        c.execute("""
-            UPDATE inventario_estado
-            SET estado='Prestado',
-                prestado_a=?,
-                fecha_prestamo=?,
-                num_prestamos = COALESCE(num_prestamos,0) + 1
-            WHERE codigo=?
-        """, (prestado_a, fecha, codigo))
+        c.execute("""INSERT INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo, num_prestamos)
+                     VALUES (?, 'Prestado', ?, ?, 1)
+                     ON CONFLICT(codigo)
+                     DO UPDATE SET estado='Prestado', prestado_a=excluded.prestado_a,
+                     fecha_prestamo=excluded.fecha_prestamo,
+                     num_prestamos=inventario_estado.num_prestamos+1""",
+                     (codigo, prestado_a, now))
     else:
-        c.execute("""
-            UPDATE inventario_estado
-            SET estado='Disponible',
-                prestado_a=NULL,
-                fecha_prestamo=NULL
-            WHERE codigo=?
-        """, (codigo,))
+        c.execute("""INSERT INTO inventario_estado (codigo, estado)
+                     VALUES (?, 'Disponible')
+                     ON CONFLICT(codigo)
+                     DO UPDATE SET estado='Disponible', prestado_a=NULL, fecha_prestamo=NULL""",
+                     (codigo,))
     conn.commit()
     conn.close()
 
-def preparar_registro(record, codigo):
-    """Agrega estado, enlace y documento incrustado."""
-    record["Codigo"] = codigo  # campo uniforme para HTML
+def preparar_registro(row_dict):
+    codigo = str(row_dict.get(COL_CODIGO, "")).strip()
+    fixed = {k: (v if v not in [None, "", "nan", "NaN"] else "-") for k, v in row_dict.items()}
     estado, prestado_a, fecha_prestamo, num_prestamos = get_estado(codigo)
-    record["Estado"] = estado
-    record["Prestado_a"] = prestado_a if prestado_a else "-"
-    record["Fecha_de_prestamo"] = fecha_prestamo if fecha_prestamo else "-"
-    record["Numero de prestamos"] = num_prestamos
-    return record
+    variable = {
+        "Estado": estado,
+        "Prestado_a": prestado_a or "-",
+        "Fecha_de_prestamo": fecha_prestamo or "-",
+        "Numero_prestamos": num_prestamos or 0
+    }
+    foto_rel = build_foto_path(codigo)
+    return {"codigo": codigo, "fixed": fixed, "variable": variable, "foto_rel": foto_rel}
 
-
-def buscar_codigo(codigo):
-    row = df[df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()]
-    if not row.empty:
-        return preparar_registro(row.to_dict(orient="records")[0], codigo)
+def buscar_por_col(valor, col_name):
+    v = (valor or "").strip().lower()
+    series = df[col_name].astype(str).str.strip().str.lower()
+    hits = df[series == v]
+    if not hits.empty:
+        return preparar_registro(hits.iloc[0].to_dict())
     return None
 
+def buscar_coincidencias(valor, col_name):
+    v = (valor or "").strip().lower()
+    series = df[col_name].astype(str).str.strip().str.lower()
+    mask = series.str.contains(v, na=False)
+    return df.loc[mask].copy()
 
-def buscar_codigo_por_descripcion(desc):
-    desc = desc.lower().strip()
-    matches = df[df.iloc[:, 3].astype(str).str.lower().str.contains(desc, na=False)]
-    return matches.iloc[:, 1].dropna().astype(str).unique().tolist()
+# === Static fotos ===
+@app.route("/fotos/<path:path>")
+def fotos_static(path):
+    safe = os.path.normpath(path).replace("\\", "/")
+    return send_from_directory(FOTOS_DIR, safe)
 
-
-# === RUTAS ===
+# === Routes ===
 @app.route("/", methods=["GET"])
 @app.route("/<codigo>", methods=["GET"])
 def index(codigo=None):
-    """Vista principal: búsqueda por código o descripción."""
     q_codigo = request.args.get("codigo", "").strip()
     if q_codigo:
         return redirect(f"/{q_codigo}")
 
     result = None
-    codigos = sorted(df.iloc[:, 1].dropna().astype(str).unique())
-    descripciones = sorted(df.iloc[:, 3].dropna().astype(str).unique())
-
     if codigo:
-        result = buscar_codigo(codigo)
+        result = buscar_por_col(codigo, COL_CODIGO)
         if not result:
-            result = {"no_agregado": True, "mensaje": f"El código «{codigo}» no ha sido registrado o agregado al inventario."}
+            result = {"no_agregado": True, "mensaje": f"Código «{codigo}» no encontrado."}
 
-    return render_template("index.html", result=result, codigos=codigos, descripciones=descripciones)
+    return render_template("index.html", result=result)
 
-
-@app.get("/autocomplete")
+@app.route("/autocomplete")
 def autocomplete():
-    """Devuelve sugerencias para autocompletar."""
     q = (request.args.get("q") or "").strip().lower()
-    kind = (request.args.get("kind") or "code").lower()
-
+    kind = request.args.get("kind", "code")
     if kind == "desc":
-        col = df.iloc[:, 3].dropna().astype(str)
+        col = df[COL_DESC]
+    elif kind == "serie" and COL_SERIE:
+        col = df[COL_SERIE]
+    elif kind == "act" and COL_ACTFIJO:
+        col = df[COL_ACTFIJO]
     else:
-        col = df.iloc[:, 1].dropna().astype(str)
+        col = df[COL_CODIGO]
 
-    if not q:
-        suggestions = col.unique().tolist()[:10]
-    else:
-        suggestions = [v for v in col if q in v.lower()][:10]
-
+    col = col.dropna().astype(str)
+    suggestions = [v for v in col if q in v.lower()][:10]
     return jsonify(suggestions)
 
 @app.route("/buscar", methods=["GET"])
 def buscar():
     desc = request.args.get("desc", "").strip()
-    if not desc:
-        return redirect(url_for("index"))
+    serie = request.args.get("serie", "").strip()
+    act = request.args.get("act", "").strip()
 
-    codigos = buscar_codigo_por_descripcion(desc)
+    if desc:
+        df_hits = buscar_coincidencias(desc, COL_DESC)
+        titulo = f"Descripción: {desc}"
+    elif serie and COL_SERIE:
+        df_hits = buscar_coincidencias(serie, COL_SERIE)
+        titulo = f"Serie: {serie}"
+    elif act and COL_ACTFIJO:
+        df_hits = buscar_coincidencias(act, COL_ACTFIJO)
+        titulo = f"Act Fijo: {act}"
+    else:
+        return redirect("/")
 
-    if len(codigos) == 0:
-        mensaje = f"La descripción «{desc}» no tiene un código agregado al inventario."
-        return render_template("seleccion.html", mensaje=mensaje)
+    if df_hits.empty:
+        return render_template("seleccion.html", mensaje="No se encontraron coincidencias.")
 
-    if len(codigos) == 1:
-        return redirect(f"/{codigos[0]}")
-
-    # Obtener código, descripción y estado actual
-    coincidencias = df[df.iloc[:, 1].astype(str).isin(codigos)]#[[df.columns[1], df.columns[3]]]
-    # coincidencias = coincidencias.rename(columns={df.columns[1]: "Codigo", df.columns[3]: "Descripcion"})
-
-    items = []
-    for _, row in coincidencias.iterrows():
-        codigo = str(row["Codigo"])
-        estado, prestado_a, fecha_de_prestamo, num_prestamos = get_estado(codigo)
-        items.append({
-            "Código": codigo,
-            "Descripción": str(row["Descripcion"]),
-            "Laboratorio": str(row["Laboratorio"]),
-            "Estado": estado,
-            "Prestado_a": prestado_a if prestado_a else "-",
-            "Fecha_préstamo": fecha_de_prestamo if fecha_de_prestamo else "-",
-            "Numero_prestamos": num_prestamos,
+    listing = []
+    for _, row in df_hits.iterrows():
+        code = str(row.get(COL_CODIGO, "")).strip()
+        estado, _, _, nump = get_estado(code)
+        listing.append({
+            "codigo": code,
+            "descripcion": str(row.get(COL_DESC, "") or ""),
+            "serie": str(row.get(COL_SERIE, "") or "-") if COL_SERIE else "-",
+            "actfijo": str(row.get(COL_ACTFIJO, "") or "-") if COL_ACTFIJO else "-",
+            "estado": estado,
+            "numero_prestamos": nump or 0
         })
-
-    return render_template("seleccion.html", desc=desc, items=items)
-
+    return render_template("seleccion.html", mensaje=None, items=listing, titulo=titulo)
 
 @app.route("/prestar/<codigo>", methods=["GET", "POST"])
 def prestar(codigo):
     if request.method == "POST":
-        alumno = request.form.get("alumno").strip()
+        alumno = (request.form.get("alumno") or "").strip()
         actualizar_estado(codigo, "Prestado", alumno)
         return redirect(f"/{codigo}")
-
-    # Buscar descripción (columna 4)
-    mask = df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()
-    filtered = df.loc[mask, df.columns[3]]
-
-    if filtered.empty:
-        desc = "(Descripción no encontrada)"
-    else:
-        desc = str(filtered.values[0])
-        
+    desc = "-"
+    row = df[df[COL_CODIGO].astype(str).str.lower() == codigo.lower()]
+    if not row.empty:
+        desc = row.iloc[0][COL_DESC]
     return render_template("prestar.html", codigo=codigo, desc=desc)
-
 
 @app.route("/devolver/<codigo>", methods=["GET", "POST"])
 def devolver(codigo):
     if request.method == "POST":
         actualizar_estado(codigo, "Disponible")
-        return redirect(f"/{codigo}")\
-        
-    # Buscar descripción (columna 4)
-    mask = df.iloc[:, 1].astype(str).str.strip().str.lower() == codigo.lower()
-    filtered = df.loc[mask, df.columns[3]]
-
-    if filtered.empty:
-        desc = "(Descripción no encontrada)"
-    else:
-        desc = str(filtered.values[0])
-        
+        return redirect(f"/{codigo}")
+    desc = "-"
+    row = df[df[COL_CODIGO].astype(str).str.lower() == codigo.lower()]
+    if not row.empty:
+        desc = row.iloc[0][COL_DESC]
     return render_template("devolver.html", codigo=codigo, desc=desc)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

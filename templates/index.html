@@ -3,142 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <title>Inventario PUCP</title>
+
+<!-- Make page non-indexable -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="googlebot" content="noindex, nofollow">
+
 <style>
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #F9FAFB;
-    color: #333;
-    margin: 0;
-    padding: 30px;
+  :root{
+    --pucp-blue: #042354;
+    --logo-h: 56px;                   /* adjust when you share exact manual values */
+    --logo-clear: calc(var(--logo-h) * 0.4);
   }
+
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+         background:#F9FAFB; color:#333; margin:0; padding:30px; }
   header {
-    display: flex;
-    align-items: center;
-    border-bottom: 3px solid #002C77;
-    padding-bottom: 15px;
-    margin-bottom: 25px;
+    display:flex; align-items:center; gap:16px;
+    border-bottom:3px solid var(--pucp-blue);
+    padding: var(--logo-clear) 0 calc(15px + var(--logo-clear)) 0;
+    margin-bottom:25px;
   }
-  header img {
-    height: 60px;
-    margin-right: 20px;
-  }
-  h1 { color: #002C77; margin: 0; }
-  h2 { color: #444; margin-top: 0; }
+  .brand { display:flex; align-items:center; gap:16px; padding-left:var(--logo-clear); padding-right:var(--logo-clear); }
+  .brand img { height:var(--logo-h); width:auto; display:block; }
+  h1 { color: var(--pucp-blue); font-size: 1.35rem; margin:0; }
 
-  /* --- Layout principal --- */
-  .layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 40px;
-  }
-  .left-panel {
-    flex: 0 0 320px;
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  .right-panel {
-    flex: 1;
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    min-height: 300px;
-  }
-  @media (max-width: 768px) {
-    .layout { flex-direction: column; }
-    .left-panel, .right-panel { width: 100%; }
-  }
+  .layout { display:flex; align-items:flex-start; gap:40px; }
+  .left-panel { flex:0 0 320px; background:white; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+  .right-panel { flex:1; background:white; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); min-height:300px; }
+  @media (max-width: 900px) { .layout{ flex-direction:column; } .left-panel,.right-panel{ width:100%; } }
 
-  /* --- Formularios --- */
-  form { margin-bottom: 20px; position: relative; }
-  input[type="text"] {
-    padding: 8px;
-    width: 100%;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    margin-top: 5px;
-  }
-  button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    color: white;
-    background: #0072CE;
-    margin-top: 8px;
-  }
-  button:hover { background: #005BB5; }
+  form { margin-bottom:18px; position:relative; }
+  label { font-weight:600; }
+  input[type="text"] { padding:8px; width:100%; border-radius:4px; border:1px solid #ccc; margin-top:5px; }
+  button { padding:8px 16px; border:none; border-radius:4px; cursor:pointer; color:white; background:#0072CE; margin-top:8px; }
+  button:hover { background:#005BB5; }
 
-  /* --- Sugerencias --- */
-  .suggestions {
-    display: none;
-    position: absolute;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    list-style: none;
-    margin-top: 4px;
-    padding-left: 0;
-    width: 100%;
-    z-index: 1000;
-  }
-  .suggestions li { padding: 8px; cursor: pointer; }
-  .suggestions li:hover { background: #E9ECF5; }
+  .suggestions { display:none; position:absolute; background:#fff; border:1px solid #ccc; border-radius:4px; list-style:none; margin-top:4px; padding-left:0; width:100%; z-index:1000; }
+  .suggestions li { padding:8px; cursor:pointer; }
+  .suggestions li:hover { background:#E9ECF5; }
 
-  /* --- Tabla de resultados --- */
-  table {
-    border-collapse: collapse;
-    background: white;
-    border-radius: 6px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
-    width: 100%;
-  }
-  th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
-  th { background: #E9ECF5; text-transform: uppercase; }
-  .estado { font-weight: bold; }
-  .disponible {
-    color: white;
-    background: green;
-    padding: 4px 8px;
-    border-radius: 4px;
-  }
-  .prestado {
-    color: white;
-    background: #B00020;
-    padding: 4px 8px;
-    border-radius: 4px;
-  }
+  .section { margin-bottom:22px; }
+  .section h3 { margin:0 0 10px 0; color:#002C77; }
+
+  table { border-collapse:collapse; background:white; border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,0.1); width:100%; }
+  th, td { padding:10px; border:1px solid #ccc; text-align:left; }
+  th { background:#E9ECF5; text-transform:uppercase; }
+  .estado { font-weight:bold; }
+  .disponible { color:white; background:green; padding:4px 8px; border-radius:4px; }
+  .prestado { color:white; background:#B00020; padding:4px 8px; border-radius:4px; }
+
+  .foto-wrap { display:flex; justify-content:center; align-items:center; min-height:220px; background:#F3F4F6; border:1px dashed #cbd5e1; border-radius:8px; }
+  .foto-wrap img { max-width:100%; max-height:360px; border-radius:6px; }
+  .placeholder { color:#666; font-style:italic; }
 </style>
 </head>
 <body>
   <header>
-    <img src="https://red.pucp.edu.pe/riel/files/2019/07/LOGO-DE-PUCP.jpg" alt="PUCP">
-    <h1>ALMACÉN DE ELECTRICIDAD Y ELECTRÓNICA</h1>
+    <div class="brand">
+      <img src="{{ url_for('static', filename='img/imagotipo-PUCP.png') }}" alt="PUCP">
+      <h1>ALMACÉN DE ELECTRICIDAD Y ELECTRÓNICA</h1>
+    </div>
   </header>
 
   <div class="layout">
-    <!-- PANEL IZQUIERDO -->
+    <!-- LEFT: search -->
     <div class="left-panel">
       <h2>Buscar artículo</h2>
 
-      <form id="codeForm" method="get" action="/">
-        <label for="codigo">Por código:</label>
-        <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-3ALMINS000037" autocomplete="off">
-        <button type="submit">Buscar</button>
-        <ul id="code-suggest" class="suggestions"></ul>
-      </form>
-
       <form id="descForm" method="get" action="/buscar">
-        <label for="desc">Por descripción:</label>
+        <label for="desc">Por descripción</label>
         <input type="text" id="desc" name="desc" placeholder="Ej. osciloscopio, fuente, multímetro" autocomplete="off">
         <button type="submit">Buscar</button>
         <ul id="desc-suggest" class="suggestions"></ul>
       </form>
+
+      <form id="codeForm" method="get" action="/">
+        <label for="codigo">Por código</label>
+        <input type="text" id="codigo" name="codigo" placeholder="Ej. A-01-1ALMINS00000067" autocomplete="off">
+        <button type="submit">Buscar</button>
+        <ul id="code-suggest" class="suggestions"></ul>
+      </form>
+
+      <form id="serieForm" method="get" action="/buscar">
+        <label for="serie">Por Serie</label>
+        <input type="text" id="serie" name="serie" placeholder="Ej. SN123456" autocomplete="off">
+        <button type="submit">Buscar</button>
+        <ul id="serie-suggest" class="suggestions"></ul>
+      </form>
+
+      <form id="actForm" method="get" action="/buscar">
+        <label for="act">Por Act Fijo</label>
+        <input type="text" id="act" name="act" placeholder="Ej. AF-000123" autocomplete="off">
+        <button type="submit">Buscar</button>
+        <ul id="act-suggest" class="suggestions"></ul>
+      </form>
     </div>
 
-    <!-- PANEL DERECHO -->
+    <!-- RIGHT: results -->
     <div class="right-panel">
       {% if result %}
         {% if result.no_agregado %}
@@ -147,49 +108,68 @@
           </div>
           <button onclick="window.location.href='/'" style="margin-top:15px;">← Regresar</button>
         {% else %}
-          <h2>Detalles del artículo</h2>
-          <table>
-            {% for key, value in result.items() %}
-              {% if key not in ['Link', 'Documento', 'no_agregado', 'mensaje'] %}
-                <tr>
-                  <th>{{ key.upper() }}</th>
-                  <td>
-                    {% if key == 'Estado' %}
-                      <span class="estado {{ 'disponible' if value == 'Disponible' else 'prestado' }}">{{ value }}</span>
-                    {% else %}
-                      {{ value if value not in [None, 'nan', 'NaN'] else '-' }}
-                    {% endif %}
-                  </td>
-                </tr>
+          <!-- A) Fixed fields (Excel) -->
+          <div class="section">
+            <h3>Campos fijos (Excel)</h3>
+            <table>
+              {% for key, value in result.fixed.items() %}
+                {% if key not in ['link', 'documento'] %}
+                  <tr>
+                    <th>{{ key }}</th>
+                    <td>{{ value if value not in [None, 'nan', 'NaN', ''] else '-' }}</td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+            </table>
+          </div>
+
+          <!-- B) Photo -->
+          <div class="section">
+            <h3>Foto del artículo</h3>
+            <div class="foto-wrap">
+              {% if result.foto_rel %}
+                <img src="/fotos/{{ result.foto_rel }}" alt="Foto {{ result.codigo }}">
+              {% else %}
+                <div class="placeholder">No se encontró una imagen en la ruta esperada.</div>
               {% endif %}
-            {% endfor %}
-          </table>
-
-          {% if result.Estado == 'Disponible' %}
-            <form action="/prestar/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
-              <button>Prestar</button>
-            </form>
-          {% elif result.Estado == 'Prestado' %}
-            <p><strong>Prestado a:</strong> {{ result.Prestado_a }}</p>
-            <form action="/devolver/{{ result['Codigo'] }}" method="get" style="margin-top:15px;">
-              <button>Devolver</button>
-            </form>
-          {% endif %}
-
-          {% if result.Documento %}
-            <div style="margin-top:25px;">
-              <h3>Documento asociado</h3>
-              {{ result.Documento|safe }}
             </div>
-          {% endif %}
+          </div>
+
+          <!-- C) Variable fields + actions -->
+          <div class="section">
+            <h3>Estado y acciones</h3>
+            <table>
+              <tr>
+                <th>Estado</th>
+                <td>
+                  <span class="estado {{ 'disponible' if result.variable.Estado == 'Disponible' else 'prestado' }}">
+                    {{ result.variable.Estado }}
+                  </span>
+                </td>
+              </tr>
+              <tr><th>Prestado a</th><td>{{ result.variable.Prestado_a }}</td></tr>
+              <tr><th>Fecha de préstamo</th><td>{{ result.variable.Fecha_de_prestamo }}</td></tr>
+              <tr><th>Número de préstamos</th><td>{{ result.variable.Numero_prestamos }}</td></tr>
+            </table>
+
+            {% if result.variable.Estado == 'Disponible' %}
+              <form action="/prestar/{{ result['codigo'] }}" method="get" style="margin-top:15px;">
+                <button>Prestar</button>
+              </form>
+            {% else %}
+              <form action="/devolver/{{ result['codigo'] }}" method="get" style="margin-top:15px;">
+                <button>Devolver</button>
+              </form>
+            {% endif %}
+          </div>
         {% endif %}
       {% else %}
-        <p>Ingrese un código o descripción para buscar un artículo.</p>
+        <p>Ingrese una descripción, código, serie o act fijo para buscar un artículo.</p>
       {% endif %}
     </div>
   </div>
 
-  <!-- === Autocompletado === -->
+  <!-- Autocomplete -->
   <script>
     function setupAutocomplete(inputId, listId, kind, onPick) {
       const input = document.getElementById(inputId);
@@ -226,7 +206,9 @@
     }
 
     setupAutocomplete('codigo', 'code-suggest', 'code', val => window.location.href = '/' + encodeURIComponent(val.trim()));
-    setupAutocomplete('desc', 'desc-suggest', 'desc', val => window.location.href = '/buscar?desc=' + encodeURIComponent(val.trim()));
+    setupAutocomplete('desc',   'desc-suggest', 'desc', val => window.location.href = '/buscar?desc=' + encodeURIComponent(val.trim()));
+    setupAutocomplete('serie',  'serie-suggest','serie',val => window.location.href = '/buscar?serie=' + encodeURIComponent(val.trim()));
+    setupAutocomplete('act',    'act-suggest',  'act',  val => window.location.href = '/buscar?act=' + encodeURIComponent(val.trim()));
   </script>
 </body>
 </html>
