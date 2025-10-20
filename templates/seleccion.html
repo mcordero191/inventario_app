@@ -17,10 +17,14 @@
 
   body { font-family:'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
          background:#F9FAFB; color:#333; margin:0; padding:30px; }
+         
   header { display:flex; align-items:center; gap:16px; border-bottom:3px solid var(--pucp-blue);
            padding: var(--logo-clear) 0 calc(15px + var(--logo-clear)) 0; margin-bottom:25px; }
+           
   .brand { display:flex; align-items:center; gap:16px; padding-left:var(--logo-clear); padding-right:var(--logo-clear); }
+  
   .brand img { height:var(--logo-h); width:auto; display:block; }
+  
   h1 { color:#002C77; margin:0; font-size:1.35rem; }
 
   table { border-collapse:collapse; background:white; border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,0.1); width:100%; }
@@ -59,7 +63,9 @@
           <th>CÓDIGO</th>
           <th>DESCRIPCIÓN</th>
           <th>SERIE</th>
-          <th>ACT FIJO</th>
+          <th>ACTIVO FIJO</th>
+          <th>LABORATORIO</th>
+          <th>RESPONSABLE</th>
           <th>ESTADO</th>
           <th>N° PRÉSTAMOS</th>
         </tr>
@@ -71,6 +77,8 @@
           <td>{{ item.descripcion }}</td>
           <td>{{ item.serie }}</td>
           <td>{{ item.actfijo }}</td>
+          <td>{{ item.laboratorio }}</td>
+          <td>{{ item.responsable }}</td>
           <td><span class="estado {{ 'disponible' if item.estado == 'Disponible' else 'prestado' }}">{{ item.estado }}</span></td>
           <td>{{ item.numero_prestamos }}</td>
         </tr>

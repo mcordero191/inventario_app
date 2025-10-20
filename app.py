@@ -211,6 +211,8 @@ def buscar():
             "serie": str(row.get(COL_SERIE, "") or "-") if COL_SERIE else "-",
             "actfijo": str(row.get(COL_ACTFIJO, "") or "-") if COL_ACTFIJO else "-",
             "estado": estado,
+            "laboratorio": row.get("laboratorio"),
+            "responsable": row.get("responsable"),
             "numero_prestamos": nump or 0
         })
     return render_template("seleccion.html", mensaje=None, items=listing, titulo=titulo)
