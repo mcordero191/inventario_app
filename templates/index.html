@@ -17,12 +17,23 @@
 
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
          background:#F9FAFB; color:#333; margin:0; padding:30px; }
+         
   header {
     display:flex; align-items:center; gap:16px;
     border-bottom:3px solid var(--pucp-blue);
     padding: var(--logo-clear) 0 calc(15px + var(--logo-clear)) 0;
     margin-bottom:25px;
   }
+  
+  .item-photo img {
+  width: auto;        /* fixed width */
+  height: 300px;        /* keeps proportions */
+  border-radius: 8px;  /* optional: smooth corners */
+  display: block;
+  margin: 10px auto;   /* center horizontally */
+  object-fit: cover;   /* crop nicely if constrained */
+  }
+
   .brand { display:flex; align-items:center; gap:16px; padding-left:var(--logo-clear); padding-right:var(--logo-clear); }
   .brand img { height:var(--logo-h); width:auto; display:block; }
   h1 { color: var(--pucp-blue); font-size: 1.35rem; margin:0; }
@@ -55,8 +66,10 @@
   .foto-wrap { display:flex; justify-content:center; align-items:center; min-height:220px; background:#F3F4F6; border:1px dashed #cbd5e1; border-radius:8px; }
   .foto-wrap img { max-width:100%; max-height:360px; border-radius:6px; }
   .placeholder { color:#666; font-style:italic; }
+  
 </style>
 </head>
+
 <body>
   <header>
     <div class="brand">
@@ -108,9 +121,23 @@
           </div>
           <button onclick="window.location.href='/'" style="margin-top:15px;">← Regresar</button>
         {% else %}
+        
+        <!-- B) Photo -->
+          <div class="section">
+            <h3>{{ result.fixed.Descripcion }}</h3>
+            <div class="foto-wrap">
+              {% if result.foto_rel %}
+                <img src="/fotos/{{ result.foto_rel }}" alt="Foto {{ result.codigo }}">
+              {% else %}
+                <div class="placeholder">No se encontró una imagen en la ruta esperada.</div>
+              {% endif %}
+            </div>
+          </div>
+          
+          
           <!-- A) Fixed fields (Excel) -->
           <div class="section">
-            <h3>Campos fijos (Excel)</h3>
+            <h3>Detalles del artículo</h3>
             <table>
               {% for key, value in result.fixed.items() %}
                 {% if key not in ['link', 'documento'] %}
@@ -123,21 +150,10 @@
             </table>
           </div>
 
-          <!-- B) Photo -->
-          <div class="section">
-            <h3>Foto del artículo</h3>
-            <div class="foto-wrap">
-              {% if result.foto_rel %}
-                <img src="/fotos/{{ result.foto_rel }}" alt="Foto {{ result.codigo }}">
-              {% else %}
-                <div class="placeholder">No se encontró una imagen en la ruta esperada.</div>
-              {% endif %}
-            </div>
-          </div>
 
           <!-- C) Variable fields + actions -->
           <div class="section">
-            <h3>Estado y acciones</h3>
+            <h3>Estado del artículo</h3>
             <table>
               <tr>
                 <th>Estado</th>
