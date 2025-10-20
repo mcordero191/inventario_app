@@ -48,7 +48,7 @@ def build_foto_path(codigo: str):
     xdd = codigo[:4]
     xddi = codigo[:6]
     base = os.path.join(FOTOS_DIR, f"STAND {stand}", xdd, xddi)
-    for ext in (".jpg", ".jpeg", ".png", ".webp"):
+    for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
         full = os.path.join(base, f"{codigo}{ext}")
         if os.path.isfile(full):
             rel = os.path.relpath(full, FOTOS_DIR)
