@@ -42,14 +42,14 @@
       </form>
 
       <form id="serieForm" method="get" action="/buscar">
-        <label for="serie">Por Serie</label>
+        <label for="serie">Por número de serie</label>
         <input type="text" id="serie" name="serie" placeholder="Ej. SN123456" autocomplete="off">
         <button type="submit">Buscar</button>
         <ul id="serie-suggest" class="suggestions"></ul>
       </form>
 
       <form id="actForm" method="get" action="/buscar">
-        <label for="act">Por Act Fijo</label>
+        <label for="act">Por activo fijo</label>
         <input type="text" id="act" name="act" placeholder="Ej. AF-000123" autocomplete="off">
         <button type="submit">Buscar</button>
         <ul id="act-suggest" class="suggestions"></ul>
@@ -62,8 +62,18 @@
           <div class="err"><strong>{{ result.mensaje }}</strong></div>
           <button class="secondary" onclick="window.location.href='/'">← Regresar</button>
         {% else %}
+        
+        <div class="section">
+            <h3>{{ result.fixed.descripcion }}</h3>
+            <div class="foto-wrap">
+              {% if result.foto_rel %}
+                <img src="/fotos/{{ result.foto_rel }}" alt="Foto {{ result.codigo }}">
+              {% else %}<div class="placeholder">No se encontró una imagen en la ruta esperada.</div>{% endif %}
+            </div>
+          </div>
+          
           <div class="section">
-            <h3>Campos fijos (Excel)</h3>
+            <h3>Detalles del artículo</h3>
             <table>
               {% for key, value in result.fixed.items() if key not in ['link','documento'] %}
                 <tr><th>{{ key }}</th><td>{{ value if value not in [None,'nan','NaN',''] else '-' }}</td></tr>
@@ -72,24 +82,15 @@
           </div>
 
           <div class="section">
-            <h3>Foto del artículo</h3>
-            <div class="foto-wrap">
-              {% if result.foto_rel %}
-                <img src="/fotos/{{ result.foto_rel }}" alt="Foto {{ result.codigo }}">
-              {% else %}<div class="placeholder">No se encontró una imagen en la ruta esperada.</div>{% endif %}
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>Estado y acciones</h3>
+            <h3>Estado del artículo</h3>
             <table>
               <tr><th>Estado</th>
                   <td><span class="estado {{ 'disponible' if result.variable.Estado == 'Disponible' else 'prestado' }}">{{ result.variable.Estado }}</span></td></tr>
-              <tr><th>Prestado a</th><td>{{ result.variable.Prestado_a }}</td></tr>
+              <tr><th>Solicitado por</th><td>{{ result.variable.Prestado_a }}</td></tr>
               <tr><th>Fecha de préstamo</th><td>{{ result.variable.Fecha_de_prestamo }}</td></tr>
-              <tr><th>Número de préstamos</th><td>{{ result.variable.Numero_prestamos }}</td></tr>
+              <tr><th>Nro de préstamos acumulados</th><td>{{ result.variable.Numero_prestamos }}</td></tr>
               <tr><th>Prestado por</th><td>{{ result.variable.Prestado_por }}</td></tr>
-              <tr><th>Devuelto por</th><td>{{ result.variable.Devuelto_por }}</td></tr>
+              <tr><th>Devuelto a</th><td>{{ result.variable.Devuelto_a }}</td></tr>
             </table>
 
             {% if is_admin %}
@@ -103,7 +104,7 @@
                 </form>
               {% endif %}
             {% else %}
-              <p style="margin-top:12px;color:#555;">Solo lectura. <a href="{{ url_for('login', next=request.full_path) }}">Inicie sesión como administrador</a> para prestar o devolver.</p>
+              <p style="margin-top:12px;color:#555;"><a href="{{ url_for('login', next=request.full_path) }}">Inicie sesión como administrador</a> para prestar o devolver.</p>
             {% endif %}
           </div>
         {% endif %}

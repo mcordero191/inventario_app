@@ -37,9 +37,19 @@ h1{color:var(--pucp-blue);margin:0;font-size:1.35rem}
 
 /* Forms */
 form{margin-bottom:18px;position:relative}
-label{font-weight:600}
-input[type="text"],input[type="password"],input[type="search"]{
-  padding:8px;width:100%;border-radius:6px;border:1px solid #ccc;margin-top:5px
+label{
+	display: block;
+	font-weight: 600;
+	margin-top: 12px;
+	}
+input[type="text"],
+input[type="password"],
+input[type="search"]{
+  padding:8px;
+  width:100%;
+  border-radius:6px;
+  border:1px solid #ccc;
+  margin-top:5px
 }
 button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;color:#fff;background:var(--accent);margin-top:8px}
 button:hover{background:#005BB5}

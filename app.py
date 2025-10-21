@@ -47,15 +47,23 @@ def choose_col(df, candidates):
         if k in norm_map: return norm_map[k]
     return None
 
-def build_foto_path(codigo):
-    if not codigo or len(codigo) < 6: return None
-    stand = codigo[0]; xdd = codigo[:4]; xddi = codigo[:6]
+def build_foto_path(ubicacion):
+    
+    if not ubicacion or len(ubicacion) < 6:
+        return None
+    
+    stand = ubicacion[0];
+    xdd = ubicacion[:4];
+    xddi = ubicacion[:]
+    
     base = os.path.join(FOTOS_DIR, f"STAND {stand}", xdd, xddi)
+    
     for ext in (".jpg",".jpeg",".png",".webp"):
         full = os.path.join(base, f"{codigo}{ext}")
         if os.path.isfile(full):
             rel = os.path.relpath(full, FOTOS_DIR)
             return rel.replace("\\","/")
+        
     return None
 
 # === Load Excel (header row 3) & lowercase headers ===
@@ -64,6 +72,7 @@ df_raw.columns = [str(c).strip().lower() for c in df_raw.columns]
 df = df_raw.copy()
 
 COL_CODIGO  = choose_col(df, ["codigo", "código"])
+COL_UBI  = choose_col(df, ["codigo de ubicacion", "código de ubicación"])
 COL_DESC    = choose_col(df, ["descripcion", "descripción"])
 COL_SERIE   = choose_col(df, ["serie", "nro_serie", "nro de serie"])
 COL_ACTFIJO = choose_col(df, ["act fijo", "activo fijo", "act_fijo", "codigo act fijo"])
@@ -88,7 +97,7 @@ def init_db():
         fecha_prestamo TEXT,
         num_prestamos INTEGER DEFAULT 0,
         prestado_por TEXT,    -- username who lent last time
-        devuelto_por TEXT     -- username who returned last time
+        devuelto_a TEXT     -- username who returned last time
     )""")
     c.execute("""CREATE TABLE IF NOT EXISTS audit_log (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,7 +121,7 @@ init_db()
 # === State helpers ===
 def get_estado(codigo):
     conn = db(); c = conn.cursor()
-    c.execute("""SELECT estado, prestado_a, fecha_prestamo, num_prestamos, prestado_por, devuelto_por
+    c.execute("""SELECT estado, prestado_a, fecha_prestamo, num_prestamos, prestado_por, devuelto_a
                  FROM inventario_estado WHERE codigo=?""", (codigo,))
     row = c.fetchone(); conn.close()
     return row or ("Disponible", None, None, 0, None, None)
@@ -121,7 +130,7 @@ def actualizar_estado(codigo, estado, actor_username, prestado_a=None):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn = db(); c = conn.cursor()
     if estado == "Prestado":
-        c.execute("""INSERT INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo, num_prestamos, prestado_por, devuelto_por)
+        c.execute("""INSERT INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo, num_prestamos, prestado_por, devuelto_a)
                      VALUES (?, 'Prestado', ?, ?, 1, ?, NULL)
                      ON CONFLICT(codigo) DO UPDATE SET
                         estado='Prestado',
@@ -129,15 +138,15 @@ def actualizar_estado(codigo, estado, actor_username, prestado_a=None):
                         fecha_prestamo=excluded.fecha_prestamo,
                         num_prestamos=inventario_estado.num_prestamos+1,
                         prestado_por=excluded.prestado_por,
-                        devuelto_por=NULL
+                        devuelto_a=NULL
         """, (codigo, prestado_a, now, actor_username))
         c.execute("""INSERT INTO audit_log(codigo, action, actor, target, at)
                      VALUES(?, 'prestar', ?, ?, ?)""", (codigo, actor_username, prestado_a or "-", now))
     else:
-        c.execute("""INSERT INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo, prestado_por, devuelto_por)
+        c.execute("""INSERT INTO inventario_estado (codigo, estado, prestado_a, fecha_prestamo, prestado_por, devuelto_a)
                      VALUES (?, 'Disponible', NULL, NULL, NULL, ?)
                      ON CONFLICT(codigo) DO UPDATE SET
-                        estado='Disponible', prestado_a=NULL, fecha_prestamo=NULL, devuelto_por=excluded.devuelto_por
+                        estado='Disponible', prestado_a=NULL, fecha_prestamo=NULL, devuelto_a=excluded.devuelto_a
         """, (codigo, actor_username))
         c.execute("""INSERT INTO audit_log(codigo, action, actor, target, at)
                      VALUES(?, 'devolver', ?, '-', ?)""", (codigo, actor_username, now))
@@ -145,17 +154,18 @@ def actualizar_estado(codigo, estado, actor_username, prestado_a=None):
 
 def preparar_registro(row_dict):
     codigo = str(row_dict.get(COL_CODIGO, "")).strip()
+    ubicacion = str(row_dict.get(COL_UBI, "")).strip()
     fixed = {k: (v if v not in [None,"","nan","NaN"] else "-") for k, v in row_dict.items()}
-    estado, prestado_a, fecha_prestamo, num_prestamos, prestado_por, devuelto_por = get_estado(codigo)
+    estado, prestado_a, fecha_prestamo, num_prestamos, prestado_por, devuelto_a = get_estado(codigo)
     variable = {
         "Estado": estado,
         "Prestado_a": prestado_a or "-",
         "Fecha_de_prestamo": fecha_prestamo or "-",
         "Numero_prestamos": num_prestamos or 0,
         "Prestado_por": prestado_por or "-",
-        "Devuelto_por": devuelto_por or "-"
+        "Devuelto_a": devuelto_a or "-"
     }
-    foto_rel = build_foto_path(codigo)
+    foto_rel = build_foto_path(ubicacion)
     return {"codigo": codigo, "fixed": fixed, "variable": variable, "foto_rel": foto_rel}
 
 def buscar_por_col(valor, col_name):
@@ -285,7 +295,8 @@ def buscar():
             "descripcion": str(row.get(COL_DESC,"") or ""),
             "serie": str(row.get(COL_SERIE,"") or "-") if COL_SERIE else "-",
             "actfijo": str(row.get(COL_ACTFIJO,"") or "-") if COL_ACTFIJO else "-",
-            "estado": estado, "numero_prestamos": nump or 0
+            "estado": estado, 
+            "numero_prestamos": nump or 0
         })
     return render_template("seleccion.html", mensaje=None, items=listing, titulo=titulo)
 
