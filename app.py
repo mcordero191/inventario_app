@@ -47,7 +47,7 @@ def choose_col(df, candidates):
         if k in norm_map: return norm_map[k]
     return None
 
-def build_foto_path(ubicacion):
+def build_foto_path(codigo, ubicacion):
     
     if not ubicacion or len(ubicacion) < 6:
         return None
@@ -165,7 +165,7 @@ def preparar_registro(row_dict):
         "Prestado_por": prestado_por or "-",
         "Devuelto_a": devuelto_a or "-"
     }
-    foto_rel = build_foto_path(ubicacion)
+    foto_rel = build_foto_path(codigo, ubicacion)
     return {"codigo": codigo, "fixed": fixed, "variable": variable, "foto_rel": foto_rel}
 
 def buscar_por_col(valor, col_name):
