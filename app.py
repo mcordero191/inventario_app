@@ -48,7 +48,7 @@ def build_foto_path(codigo: str):
     xdd = codigo[:4]
     xddi = codigo[:6]
     base = os.path.join(FOTOS_DIR, f"STAND {stand}", xdd, xddi)
-    for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+    for ext in (".jpg", ".jpeg", ".png", ".webp"):
         full = os.path.join(base, f"{codigo}{ext}")
         if os.path.isfile(full):
             rel = os.path.relpath(full, FOTOS_DIR)
@@ -62,7 +62,7 @@ df = df_raw.copy()
 
 COL_CODIGO   = choose_col(df, ["codigo", "código"])
 COL_DESC     = choose_col(df, ["descripcion", "descripción"])
-COL_SERIE    = choose_col(df, ["serie", "nro_serie"])
+COL_SERIE    = choose_col(df, ["serie", "nro_serie", "numero de serie", "número de serie"])
 COL_ACTFIJO  = choose_col(df, ["act fijo", "activo fijo", "act_fijo"])
 
 # === SQLite for variable fields ===

@@ -98,14 +98,14 @@
       </form>
 
       <form id="serieForm" method="get" action="/buscar">
-        <label for="serie">Por Serie</label>
+        <label for="serie">Por número de serie</label>
         <input type="text" id="serie" name="serie" placeholder="Ej. SN123456" autocomplete="off">
         <button type="submit">Buscar</button>
         <ul id="serie-suggest" class="suggestions"></ul>
       </form>
 
       <form id="actForm" method="get" action="/buscar">
-        <label for="act">Por Act Fijo</label>
+        <label for="act">Por activo fijo</label>
         <input type="text" id="act" name="act" placeholder="Ej. AF-000123" autocomplete="off">
         <button type="submit">Buscar</button>
         <ul id="act-suggest" class="suggestions"></ul>
@@ -124,7 +124,7 @@
         
         <!-- B) Photo -->
           <div class="section">
-            <h3>{{ result.fixed.Descripcion }}</h3>
+            <h3>{{ result.fixed.descripcion }}</h3>
             <div class="foto-wrap">
               {% if result.foto_rel %}
                 <img src="/fotos/{{ result.foto_rel }}" alt="Foto {{ result.codigo }}">
@@ -170,11 +170,11 @@
 
             {% if result.variable.Estado == 'Disponible' %}
               <form action="/prestar/{{ result['codigo'] }}" method="get" style="margin-top:15px;">
-                <button>Prestar</button>
+                <button>Solicitar préstamo</button>
               </form>
             {% else %}
               <form action="/devolver/{{ result['codigo'] }}" method="get" style="margin-top:15px;">
-                <button>Devolver</button>
+                <button>Devolver articulo</button>
               </form>
             {% endif %}
           </div>
