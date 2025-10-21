@@ -3,42 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Coincidencias de búsqueda</title>
-
-<!-- Make page non-indexable -->
-<meta name="robots" content="noindex, nofollow">
-<meta name="googlebot" content="noindex, nofollow">
-
-<style>
-  :root{
-    --pucp-blue: #042354;
-    --logo-h: 80px;
-    --logo-clear: calc(var(--logo-h) * 0.4);
-  }
-
-  body { font-family:'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
-         background:#F9FAFB; color:#333; margin:0; padding:30px; }
-         
-  header { display:flex; align-items:center; gap:16px; border-bottom:3px solid var(--pucp-blue);
-           padding: var(--logo-clear) 0 calc(15px + var(--logo-clear)) 0; margin-bottom:25px; }
-  
-  .brand { display:flex; align-items:center; gap:16px; padding-left:var(--logo-clear); padding-right:var(--logo-clear); }
-  
-  .brand img { height:var(--logo-h); width:auto; display:block; }
-  
-  h1 { color:#002C77; margin:0; font-size:1.35rem; }
-
-  table { border-collapse:collapse; background:white; border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,0.1); width:100%; }
-  th, td { padding:10px; border:1px solid #ccc; text-align:left; }
-  th { background:#E9ECF5; text-transform:uppercase; }
-  tr:hover { background:#f4f6fc; cursor:pointer; }
-
-  .estado { font-weight:bold; border-radius:4px; padding:3px 8px; color:white; }
-  .disponible { background:green; }
-  .prestado { background:#B00020; }
-
-  button { padding:8px 14px; border:none; border-radius:4px; background:#0072CE; color:white; cursor:pointer; margin-top:15px; }
-  button:hover { background:#005BB5; }
-</style>
+<meta name="robots" content="noindex, nofollow"><meta name="googlebot" content="noindex, nofollow">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
   <header>
@@ -46,13 +12,20 @@
       <img src="{{ url_for('static', filename='img/imagotipo-PUCP.png') }}" alt="PUCP">
       <h1>ALMACÉN DE ELECTRICIDAD Y ELECTRÓNICA</h1>
     </div>
+    <div class="header-actions">
+      {% if is_admin %}
+        <span class="badge-admin">Admin</span>
+        <a href="{{ url_for('users') }}">Usuarios</a>
+        <a href="{{ url_for('logout') }}">Salir</a>
+      {% else %}
+        <a href="{{ url_for('login', next=request.full_path) }}">Iniciar sesión</a>
+      {% endif %}
+    </div>
   </header>
 
   {% if mensaje %}
-    <div style="background:#FFE5E5; color:#B00020; padding:15px; border-radius:6px;">
-      <strong>{{ mensaje }}</strong>
-    </div>
-    <button onclick="window.location.href='/'">← Regresar</button>
+    <div class="err"><strong>{{ mensaje }}</strong></div>
+    <button class="secondary" onclick="window.location.href='/'">← Regresar</button>
   {% else %}
     <h2>Resultados {% if titulo %}para {{ titulo }}{% endif %}</h2>
     <p>Seleccione un artículo para ver sus detalles:</p>
@@ -60,14 +33,7 @@
     <table>
       <thead>
         <tr>
-          <th>CÓDIGO</th>
-          <th>DESCRIPCIÓN</th>
-          <th>SERIE</th>
-          <th>ACTIVO FIJO</th>
-          <th>LABORATORIO</th>
-          <th>RESPONSABLE</th>
-          <th>ESTADO</th>
-          <th>N° PRÉSTAMOS</th>
+          <th>CÓDIGO</th><th>DESCRIPCIÓN</th><th>SERIE</th><th>ACT FIJO</th><th>ESTADO</th><th>N° PRÉSTAMOS</th>
         </tr>
       </thead>
       <tbody>
@@ -77,8 +43,6 @@
           <td>{{ item.descripcion }}</td>
           <td>{{ item.serie }}</td>
           <td>{{ item.actfijo }}</td>
-          <td>{{ item.laboratorio }}</td>
-          <td>{{ item.responsable }}</td>
           <td><span class="estado {{ 'disponible' if item.estado == 'Disponible' else 'prestado' }}">{{ item.estado }}</span></td>
           <td>{{ item.numero_prestamos }}</td>
         </tr>
@@ -86,7 +50,7 @@
       </tbody>
     </table>
 
-    <button onclick="window.location.href='/'">← Nueva búsqueda</button>
+    <button class="secondary" onclick="window.location.href='/'">← Nueva búsqueda</button>
   {% endif %}
 </body>
 </html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><title>Acceso de administrador</title>
+<meta name="robots" content="noindex, nofollow"><meta name="googlebot" content="noindex, nofollow">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <div class="card">
+    <h1>Acceso de administrador</h1>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="POST" action="{{ url_for('login', next=next) }}">
+      <label for="username">Usuario</label>
+      <input id="username" name="username" placeholder="admin" required>
+      <label for="password">Contraseña</label>
+      <input id="password" name="password" type="password" required>
+      <button type="submit">Ingresar</button>
+      <a class="secondary" style="margin-left:8px;text-decoration:none;color:#333" href="{{ next or url_for('index') }}">Cancelar</a>
+    </form>
+  </div>
+</body>
+</html>
