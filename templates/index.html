@@ -83,33 +83,37 @@
 
           <div class="section">
             <h3>Estado del artículo</h3>
-            <table>
-              <tr><th>Estado</th>
-                  <td><span class="estado {{ 'disponible' if result.variable.Estado == 'Disponible' else 'prestado' }}">{{ result.variable.Estado }}</span></td></tr>
-              <tr><th>Solicitado por</th><td>{{ result.variable.Prestado_a }}</td></tr>
-              <tr><th>Fecha de préstamo</th><td>{{ result.variable.Fecha_de_prestamo }}</td></tr>
-              <tr><th>Nro de préstamos acumulados</th><td>{{ result.variable.Numero_prestamos }}</td></tr>
-              <tr><th>Prestado por</th><td>{{ result.variable.Prestado_por }}</td></tr>
-              <tr><th>Devuelto a</th><td>{{ result.variable.Devuelto_a }}</td></tr>
-            </table>
+			<table>
+			  <tr>
+			    <th>Estado</th>
+			    <td>
+			      <span class="estado {{ 'disponible' if result.variable.Estado == 'Disponible' else 'prestado' }}">
+			        {{ result.variable.Estado }}
+			      </span>
+			    </td>
+			  </tr>
+			  {% for label, value in result.display_fields %}
+			    <tr><th>{{ label }}</th><td>{{ value }}</td></tr>
+			  {% endfor %}
+			</table>
 
             {% if is_admin %}
               {% if result.variable.Estado == 'Disponible' %}
                 <form action="/prestar/{{ result['codigo'] }}" method="get" style="margin-top:15px;">
-                  <button>Prestar</button>
+                  <button>Registrar préstamo</button>
                 </form>
               {% else %}
                 <form action="/devolver/{{ result['codigo'] }}" method="get" style="margin-top:15px;">
-                  <button>Devolver</button>
+                  <button>Registrar devolución</button>
                 </form>
               {% endif %}
             {% else %}
-              <p style="margin-top:12px;color:#555;"><a href="{{ url_for('login', next=request.full_path) }}">Inicie sesión como administrador</a> para prestar o devolver.</p>
+              <p style="margin-top:12px;color:#555;"><a href="{{ url_for('login', next=request.full_path) }}">Inicie sesión como administrador</a> para registrar un préstamo o devolución.</p>
             {% endif %}
           </div>
         {% endif %}
       {% else %}
-        <p>Ingrese una descripción, código, serie o act fijo para buscar un artículo.</p>
+        <p>Ingrese una descripción, código, serie o activo fijo para buscar un artículo.</p>
       {% endif %}
     </div>
   </div>
