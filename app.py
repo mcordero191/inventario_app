@@ -186,7 +186,10 @@ def preparar_registro(row_dict):
     codigo = str(row_dict.get(COL_CODIGO, "")).strip()
     ubicacion = str(row_dict.get(COL_UBI, "")).strip()
     fixed = {k: (v if v not in [None,"","nan","NaN"] else "-") for k, v in row_dict.items()}
-    estado, prestado_a, fecha_prestamo, num_prestamos, prestado_por, devuelto_a, fecha_devolucion = get_estado(codigo)
+
+    (estado, prestado_a, fecha_prestamo, num_prestamos,
+     prestado_por, devuelto_a, fecha_devolucion) = get_estado(codigo)
+
     variable = {
         "Estado": estado,
         "Prestado_a": prestado_a or "-",
@@ -196,9 +199,29 @@ def preparar_registro(row_dict):
         "Devuelto_a": devuelto_a or "-",
         "Fecha_de_devolucion": fecha_devolucion or "-"
     }
-    foto_rel = build_foto_path(codigo, ubicacion)
-    return {"codigo": codigo, "fixed": fixed, "variable": variable, "foto_rel": foto_rel}
 
+    if estado == "Disponible":
+        display_fields = [
+            ("Devuelto a", variable["Devuelto_a"]),
+            ("Fecha de devolución", variable["Fecha_de_devolucion"]),
+            ("Nro de préstamos acumulados", variable["Numero_prestamos"])
+        ]
+    else:
+        display_fields = [
+            ("Solicitado por", variable["Prestado_a"]),
+            ("Fecha de préstamo", variable["Fecha_de_prestamo"]),
+            ("Préstado por", variable["Prestado_por"]),
+            ("Nro de préstamos acumulados", variable["Numero_prestamos"])
+        ]
+
+    return {
+        "codigo": codigo,
+        "fixed": fixed,
+        "variable": variable,
+        "foto_rel": build_foto_path(codigo, ubicacion),
+        "display_fields": display_fields
+    }
+    
 def buscar_por_col(valor, col_name):
     v = (valor or "").strip().lower()
     series = df[col_name].astype(str).str.strip().str.lower()
