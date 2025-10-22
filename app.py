@@ -66,15 +66,15 @@ def build_foto_path(codigo, ubicacion):
 # === Load Excel (header row 3) & lowercase headers ===
 df_raw = pd.read_excel(EXCEL_FILE, header=2, dtype=str)
 
-# Convert to lowercase and clean column names
-cols = [str(c).strip().lower() for c in df_raw.columns]
-# Define columns to exclude (already lowercase)
-exclude_cols = {"observaciones", "año de adquisicion", "retiquetado", "fecha de calibracion"}
-# Filter out unwanted columns
-cols_filtered = [c for c in cols if c not in exclude_cols]
-# Apply to dataframe (keeping only filtered columns)
-df_raw = df_raw[cols_filtered]
+# Normalize headers to lowercase (and trim) FIRST
+df_raw.columns = [str(c).strip().lower() for c in df_raw.columns]
 
+# Drop unwanted columns safely (won't error if a column is missing)
+exclude_cols = {"observaciones", "año de adquisicion", "retiquetado", "fecha de calibracion"}
+
+df_raw = df_raw.drop(columns=list(exclude_cols), errors="ignore")
+
+# Work with the cleaned frame
 df = df_raw.copy()
 
 COL_CODIGO  = choose_col(df, ["codigo", "código"])
